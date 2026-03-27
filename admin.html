@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Problem Bank — Student Dashboard</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <style>
+        /* ===== SHARED DESIGN SYSTEM ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #2D5A8E;
+            --primary-light: #4A7AB5;
+            --primary-dark: #1E3D5F;
+            --accent: #E8913A;
+            --accent-light: #F5A855;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #E53935;
+            --bg: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --text: #2C3E50;
+            --text-light: #6B7C93;
+            --text-muted: #9BAABD;
+            --border: #E1E8F0;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.25s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ===== HEADER ===== */
+        .site-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #162D47 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-brand .logo { font-size: 1.8rem; }
+
+        .header-brand h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-brand .subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .team-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.12);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+        }
+
+        .team-badge .badge-icon { font-size: 1rem; }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+            opacity: 0.9;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(232,145,58,0.4);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #43A047;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #FB8C00;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-light);
+            padding: 0.4rem 0.8rem;
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.82rem;
+        }
+
+        .btn-google {
+            background: white;
+            color: #333;
+            border: 2px solid var(--border);
+            font-size: 1rem;
+            padding: 0.8rem 1.5rem;
+        }
+
+        .btn-google:hover {
+            background: #f8f9fa;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        .btn-danger-outline:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--text-muted) !important;
+            color: var(--bg-card) !important;
+        }
+
+        .btn-disabled:hover {
+            background: var(--text-muted) !important;
+            transform: none !important;
+        }
+
+        /* ===== FREE AGENT BADGE ===== */
+        .free-agent-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.15);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-style: italic;
+        }
+
+        .free-agent-badge .badge-icon { font-size: 1rem; }
+
+        /* ===== TEAM BANNER ===== */
+        .team-banner {
+            background: #E3F2FD;
+            padding: 1.2rem;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .team-banner .banner-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .team-banner .banner-content {
+            flex: 1;
+        }
+
+        .team-banner .banner-message {
+            font-size: 0.95rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+        }
+
+        .team-banner .banner-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .team-banner .banner-buttons .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.82rem;
+        }
+
+        /* ===== TEAM MODALS ===== */
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-section:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 3rem;
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+        }
+
+        .login-card .login-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+
+        .login-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-card .login-desc {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .login-card .login-note {
+            margin-top: 1.5rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .login-card a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .login-card a:hover {
+            text-decoration: underline;
+        }
+
+        .join-team-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: white;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: left;
+        }
+
+        .join-team-btn:hover {
+            border-color: var(--primary-light);
+            background: #f0f5ff;
+        }
+
+        .join-team-btn .jt-icon { font-size: 1.3rem; }
+
+        .join-team-btn .jt-info { flex: 1; }
+
+        .join-team-btn .jt-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .join-team-btn .jt-members {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== DASHBOARD LAYOUT ===== */
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* ===== TAB NAV ===== */
+        .tab-nav {
+            display: flex;
+            gap: 0;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.9rem 1rem;
+            border: none;
+            background: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all var(--transition);
+            border-bottom: 3px solid transparent;
+            text-align: center;
+        }
+
+        .tab-btn:hover { background: var(--bg); }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: #f0f5ff;
+        }
+
+        .tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            background: var(--border);
+            border-radius: 11px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-left: 0.4rem;
+            color: var(--text-light);
+        }
+
+        .tab-btn.active .tab-count {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ===== PROBLEM LIST ITEMS ===== */
+        .problem-list-item {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1.2rem;
+            transition: all var(--transition);
+        }
+
+        .problem-list-item:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .pli-image {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            background: linear-gradient(135deg, #e8edf2, #d5dde8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .pli-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .pli-image .pli-placeholder { font-size: 1.8rem; opacity: 0.3; }
+
+        .pli-body { flex: 1; min-width: 0; }
+
+        .pli-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .pli-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .pli-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.4rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-category { background: #E3F2FD; color: #1565C0; }
+        .tag-discipline { background: #FFF3E0; color: #E65100; }
+        .tag-status-new { background: #E8F5E9; color: #2E7D32; }
+        .tag-status-claimed { background: #FFF8E1; color: #F57F17; }
+        .tag-status-inprogress { background: #E3F2FD; color: #1565C0; }
+        .tag-status-solved { background: #F3E5F5; color: #7B1FA2; }
+        .tag-severity { background: #FFF3E0; color: #E65100; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .tag-team { background: #E8EAF6; color: #283593; }
+
+        .pli-desc {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .pli-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .pli-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal { transform: translateY(0); }
+
+        .modal-header {
+            padding: 1.5rem 2rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .modal-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .modal-header p {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0.2rem;
+        }
+
+        .modal-close:hover { color: var(--text); }
+
+        .modal-body { padding: 1.5rem 2rem; }
+        .modal-footer {
+            padding: 1rem 2rem 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+
+        .form-group .helper {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color var(--transition);
+            background: white;
+        }
+
+        .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--primary-light); }
+
+        .form-textarea { resize: vertical; min-height: 80px; }
+
+        /* ===== EMAIL TEMPLATE ===== */
+        .email-template {
+            background: #FAFBFC;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.2rem;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: inherit;
+            color: var(--text);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* ===== INTERNAL NOTES ===== */
+        .notes-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .notes-section h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .note {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #FFFDE7;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--warning);
+        }
+
+        .note-body { flex: 1; }
+
+        .note-author {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .note-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+
+        .note-text {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-top: 0.2rem;
+        }
+
+        .note-input-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .note-input-area input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+
+        .note-input-area input:focus { outline: none; border-color: var(--primary-light); }
+
+        /* ===== COMMENTS POPUP ===== */
+        .comments-popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 240;
+            background: transparent;
+        }
+
+        .comments-popup {
+            position: fixed;
+            z-index: 250;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 380px;
+            max-width: 90vw;
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: popIn 0.2s ease;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .comments-popup .cp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .comments-popup .cp-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            padding: 0.2rem;
+        }
+
+        .comments-popup .cp-close:hover { color: var(--text); }
+
+        .comments-popup .cp-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1rem;
+            max-height: 320px;
+        }
+
+        .comments-popup .cp-empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .comments-popup .cp-comment {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .comments-popup .cp-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .comments-popup .cp-author {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .comments-popup .cp-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 0.4rem;
+        }
+
+        .comments-popup .cp-text {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-top: 0.15rem;
+            line-height: 1.4;
+        }
+
+        .comments-popup .cp-hint {
+            padding: 0.6rem 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            background: #fafbfc;
+        }
+
+        .comment-bubble-btn {
+            cursor: pointer;
+            transition: color var(--transition);
+        }
+
+        .comment-bubble-btn:hover {
+            color: var(--primary);
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-light);
+        }
+
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+        .empty-state h3 { font-size: 1.2rem; color: var(--text); margin-bottom: 0.3rem; }
+
+        /* ===== CONFIG BANNER ===== */
+        .config-banner {
+            background: #FFF3E0;
+            border-bottom: 2px solid #FFE0B2;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 0.88rem;
+            color: #E65100;
+        }
+
+        .config-banner code {
+            background: rgba(0,0,0,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: var(--text);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInToast 0.3s ease;
+        }
+
+        @keyframes slideInToast {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header-content { flex-wrap: wrap; gap: 0.75rem; }
+            .team-badge { display: none; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .problem-list-item { flex-direction: column; }
+            .pli-image { width: 100%; height: 120px; }
+            .pli-actions { flex-direction: row; }
+            .modal-body { padding: 1.2rem; }
+            .tab-btn { font-size: 0.78rem; padding: 0.7rem 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-icon">&#x1f3a8;</div>
+            <h2>Student Dashboard</h2>
+            <p class="login-desc">Sign in with your school Google account to claim problems, track progress, and collaborate with your team.</p>
+            <button class="btn btn-google" onclick="signInWithGoogle()">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2a10.34 10.34 0 0 0-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+                Sign in with Google
+            </button>
+            <p class="login-note">
+                Only school accounts can access this dashboard.<br>
+                <a href="index.html">&#x2190; Back to Problem Bank</a>
+            </p>
+            <div id="loginError" style="color:var(--danger); margin-top:1rem; font-size:0.85rem; display:none;"></div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN DASHBOARD ===== -->
+    <div id="dashboardScreen" style="display:none">
+
+        <!-- Header -->
+        <header class="site-header">
+            <div class="header-content">
+                <div class="header-brand">
+                    <span class="logo">&#x1f3a8;</span>
+                    <div>
+                        <h1>Student Dashboard</h1>
+                        <div class="subtitle">Design Problem Bank</div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="team-badge" id="headerTeamBadge">
+                        <span class="badge-icon">&#x1f465;</span>
+                        <span id="headerTeamName">Team Name</span>
+                    </div>
+                    <button class="btn btn-ghost" id="settingsBtn" style="color:rgba(255,255,255,0.7); display:none; font-size:1.2rem; padding:0.3rem;" title="Team Settings" onclick="openSettings()">&#x2699;</button>
+                    <div class="user-info" id="headerUserInfo">
+                        <img class="user-avatar" id="headerAvatar" src="" alt="">
+                        <span id="headerUserName"></span>
+                    </div>
+                    <button class="btn btn-ghost" style="color:rgba(255,255,255,0.7);" onclick="signOut()">Sign out</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Config Banner -->
+        <div class="config-banner" id="configBanner">
+            &#x1f527; <strong>Demo mode:</strong> Firebase is not configured yet (see <code>SETUP.md</code>).
+            Data syncs between pages via browser storage. Refresh the public page after making changes here to see updates.
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard">
+
+            <!-- Team Banner (shown when currentTeam is null) -->
+            <div class="team-banner" id="teamBanner" style="display:none;">
+                <div class="banner-icon">&#x1f465;</div>
+                <div class="banner-content">
+                    <div class="banner-message">You're browsing as a free agent. Join or create a team to claim problems.</div>
+                    <div class="banner-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="openTeamModal('create')">Create a Team</button>
+                        <button class="btn btn-outline btn-sm" onclick="openTeamModal('join')">Join a Team</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="available" onclick="switchTab(this, 'available')">
+                    &#x1f7e2; Available <span class="tab-count" id="tabCountAvailable">0</span>
+                </button>
+                <button class="tab-btn" data-tab="myproblems" onclick="switchTab(this, 'myproblems')">
+                    &#x1f4cc; My Team's Problems <span class="tab-count" id="tabCountMine">0</span>
+                </button>
+                <button class="tab-btn" data-tab="solved" onclick="switchTab(this, 'solved')">
+                    &#x1f7e3; Solved <span class="tab-count" id="tabCountSolved">0</span>
+                </button>
+                <button class="tab-btn" data-tab="all" onclick="switchTab(this, 'all')">
+                    &#x1f4da; All Problems <span class="tab-count" id="tabCountAll">0</span>
+                </button>
+            </div>
+
+            <!-- Available Problems Tab -->
+            <div class="tab-panel active" id="tab-available">
+                <div id="availableList"></div>
+            </div>
+
+            <!-- My Team's Problems Tab -->
+            <div class="tab-panel" id="tab-myproblems">
+                <div id="myProblemsList"></div>
+            </div>
+
+            <!-- Solved Problems Tab -->
+            <div class="tab-panel" id="tab-solved">
+                <div id="solvedList"></div>
+            </div>
+
+            <!-- All Problems Tab -->
+            <div class="tab-panel" id="tab-all">
+                <div id="allProblemsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TEAM MODAL ===== -->
+    <div class="modal-overlay" id="teamModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="teamModalTitle">Create a Team</h2>
+                </div>
+                <button class="modal-close" onclick="closeTeamModal()">×</button>
+            </div>
+            <div style="padding:1.5rem 2rem;">
+                <!-- Create Mode -->
+                <div id="teamCreateMode">
+                    <div class="form-group">
+                        <label>Team Name</label>
+                        <div class="helper">Pick something memorable! e.g., "Design Thinkers" or "Team Prototype"</div>
+                        <input type="text" class="form-input" id="teamNameInput" placeholder="Enter your team name..." maxlength="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Team Members</label>
+                        <div class="helper">List your team members (this helps your teacher track groups)</div>
+                        <textarea class="form-textarea" id="teamMembersInput" placeholder="e.g., Alex, Jordan, Sam" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="createNewTeam()" style="width:100%; justify-content:center; font-size:1rem; padding:0.8rem;">
+                        &#x1f680; Create Team
+                    </button>
+                </div>
+
+                <!-- Join Mode -->
+                <div id="teamJoinMode" style="display:none;">
+                    <div class="form-group">
+                        <label>Select a team to join</label>
+                        <div class="helper">Click a team below to join them</div>
+                        <div id="existingTeamsList" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2>Team Settings</h2>
+                </div>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+            <div style="padding:1.5rem 2rem;">
+                <div class="modal-section">
+                    <div class="form-group">
+                        <label>Team Name</label>
+                        <div style="font-size:1rem; color:var(--text); padding:0.8rem; background:var(--bg); border-radius:var(--radius-sm);" id="settingsTeamName"></div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <label>Members</label>
+                    <div style="font-size:0.9rem; color:var(--text-light); padding:0.8rem; background:var(--bg); border-radius:var(--radius-sm);" id="settingsTeamMembers"></div>
+                </div>
+
+                <div class="modal-section">
+                    <label>Joined</label>
+                    <div style="font-size:0.9rem; color:var(--text-light); padding:0.8rem; background:var(--bg); border-radius:var(--radius-sm);" id="settingsTeamJoinedDate"></div>
+                </div>
+
+                <div class="modal-section">
+                    <button class="btn btn-danger-outline" onclick="leaveTeam()" style="width:100%; justify-content:center;">
+                        Leave Team
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DETAIL / ACTION MODAL ===== -->
+    <div class="modal-overlay" id="actionModal">
+        <div class="modal" id="actionModalContent">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- ===== EMAIL TEMPLATE MODAL ===== -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal" id="emailModalContent">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+
+    <script>
+    // =========================================================
+    // FIREBASE CONFIG (same as index.html)
+    // =========================================================
+    const FIREBASE_CONFIG = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+    };
+
+    let db = null;
+    let storage = null;
+    let auth = null;
+    let useFirebase = false;
+    let currentUser = null;
+    let currentTeam = null;
+
+    // Try to initialize Firebase
+    if (FIREBASE_CONFIG.apiKey) {
+        try {
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+            storage = firebase.storage();
+            auth = firebase.auth();
+            useFirebase = true;
+            document.getElementById('configBanner').style.display = 'none';
+        } catch(e) {
+            console.warn('Firebase init failed:', e);
+        }
+    }
+
+    // =========================================================
+    // LOCAL STORAGE (shared with index.html)
+    // =========================================================
+    // NOTE: When opening HTML files directly (file://), Chrome
+    // isolates localStorage per page. We use a hidden iframe to
+    // bridge data from the public page so both stay in sync.
+    // Once Firebase is connected, this isn't needed at all.
+    const LOCAL_KEY = 'problemBank_problems';
+    const TEAM_KEY = 'problemBank_team';
+    const DEMO_USER_KEY = 'problemBank_demoUser';
+
+    let bridgeIframe = null;
+    const isFileProtocol = window.location.protocol === 'file:';
+
+    function initBridge() {
+        if (!isFileProtocol || useFirebase) return Promise.resolve();
+        return new Promise((resolve) => {
+            bridgeIframe = document.createElement('iframe');
+            bridgeIframe.style.display = 'none';
+            bridgeIframe.src = 'index.html';
+            bridgeIframe.onload = () => {
+                // Pull any problems from the public page's localStorage
+                try {
+                    const publicData = bridgeIframe.contentWindow.localStorage.getItem(LOCAL_KEY);
+                    const localData = localStorage.getItem(LOCAL_KEY);
+                    if (publicData && publicData !== '[]') {
+                        // Merge: public page is the source of truth for new submissions
+                        const publicProblems = JSON.parse(publicData);
+                        const localProblems = JSON.parse(localData || '[]');
+                        const merged = mergeProblems(publicProblems, localProblems);
+                        localStorage.setItem(LOCAL_KEY, JSON.stringify(merged));
+                        // Sync back to public page
+                        bridgeIframe.contentWindow.localStorage.setItem(LOCAL_KEY, JSON.stringify(merged));
+                    }
+                } catch(e) {
+                    console.warn('Bridge sync error:', e);
+                }
+                resolve();
+            };
+            bridgeIframe.onerror = () => resolve();
+            document.body.appendChild(bridgeIframe);
+        });
+    }
+
+    function mergeProblems(publicList, localList) {
+        // Use a map keyed by ID, with local (admin) changes taking priority
+        const map = new Map();
+        publicList.forEach(p => map.set(p.id, p));
+        localList.forEach(p => map.set(p.id, p)); // Admin overrides
+        return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
+    function syncToPublicPage() {
+        // Push updated data back to the public page's localStorage via the bridge
+        if (bridgeIframe && isFileProtocol) {
+            try {
+                const data = localStorage.getItem(LOCAL_KEY);
+                bridgeIframe.contentWindow.localStorage.setItem(LOCAL_KEY, data);
+            } catch(e) {
+                console.warn('Bridge write error:', e);
+            }
+        }
+    }
+
+    function getLocalProblems() {
+        try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function saveLocalProblems(problems) {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(problems));
+        syncToPublicPage();
+    }
+
+    function getLocalTeam() {
+        // Key team data by user ID so different demo users get separate teams
+        const uid = currentUser?.uid || '';
+        try { return JSON.parse(localStorage.getItem(TEAM_KEY + '_' + uid) || 'null'); }
+        catch { return null; }
+    }
+
+    function saveLocalTeam(team) {
+        const uid = currentUser?.uid || '';
+        localStorage.setItem(TEAM_KEY + '_' + uid, JSON.stringify(team));
+    }
+
+    // =========================================================
+    // STATE
+    // =========================================================
+    let allProblems = [];
+    const SEVERITY_EMOJIS = ['', '&#x1f600;', '&#x1f615;', '&#x1f61f;', '&#x1f62b;', '&#x1f631;'];
+    const SEVERITY_LABELS = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical'];
+    const STATUS_LABELS = {
+        'new': '&#x1f7e2; New',
+        'claimed': '&#x1f7e1; Claimed',
+        'inprogress': '&#x1f535; In Progress',
+        'solved': '&#x1f7e3; Solved'
+    };
+    const STATUS_NAMES = {
+        'new': 'New',
+        'claimed': 'Claimed',
+        'inprogress': 'In Progress',
+        'solved': 'Solved'
+    };
+
+    // =========================================================
+    // AUTHENTICATION
+    // =========================================================
+    function signInWithGoogle() {
+        if (useFirebase && auth) {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            // Optionally restrict to school domain:
+            // provider.setCustomParameters({ hd: 'dawsonschool.org' });
+            auth.signInWithPopup(provider).then(result => {
+                currentUser = result.user;
+                onSignedIn();
+            }).catch(err => {
+                const errDiv = document.getElementById('loginError');
+                errDiv.style.display = 'block';
+                errDiv.textContent = err.message;
+            });
+        } else {
+            // Demo mode — simulate login
+            const demoName = prompt('Demo mode: Enter your name') || 'Demo Student';
+            currentUser = {
+                displayName: demoName,
+                email: demoName.toLowerCase().replace(/\s+/g, '.') + '@school.edu',
+                photoURL: null,
+                uid: 'demo_' + Date.now()
+            };
+            localStorage.setItem(DEMO_USER_KEY, JSON.stringify(currentUser));
+            onSignedIn();
+        }
+    }
+
+    function signOut() {
+        if (useFirebase && auth) {
+            auth.signOut();
+        }
+        currentUser = null;
+        currentTeam = null;
+        localStorage.removeItem(DEMO_USER_KEY);
+        showScreen('login');
+    }
+
+    function onSignedIn() {
+        // Check if this user already belongs to a team
+        if (useFirebase) {
+            db.collection('teams').doc(currentUser.uid).get().then(doc => {
+                if (doc.exists) {
+                    currentTeam = doc.data();
+                } else {
+                    currentTeam = null;
+                }
+                showDashboard();
+            }).catch(() => {
+                currentTeam = getLocalTeam() || null;
+                showDashboard();
+            });
+        } else {
+            currentTeam = getLocalTeam() || null;
+            showDashboard();
+        }
+    }
+
+    function populateExistingTeams() {
+        const teamsList = document.getElementById('existingTeamsList');
+
+        // Gather unique teams from all known sources
+        const knownTeams = new Map();
+
+        // From problems that have been claimed
+        const problems = getLocalProblems();
+        problems.forEach(p => {
+            if (p.claimedByTeam && p.claimedByTeam.trim()) {
+                if (!knownTeams.has(p.claimedByTeam)) {
+                    knownTeams.set(p.claimedByTeam, { name: p.claimedByTeam, members: '' });
+                }
+            }
+        });
+
+        // From locally saved teams (scan localStorage for team keys)
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(TEAM_KEY + '_')) {
+                try {
+                    const team = JSON.parse(localStorage.getItem(key));
+                    if (team && team.name && !knownTeams.has(team.name)) {
+                        knownTeams.set(team.name, team);
+                    }
+                } catch(e) {}
+            }
+        }
+
+        if (knownTeams.size === 0) {
+            teamsList.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No existing teams found. Create a new one!</div>';
+            return;
+        }
+
+        teamsList.innerHTML = Array.from(knownTeams.values()).map(t => `
+            <button class="join-team-btn" onclick="joinExistingTeam('${escapeHtml(t.name)}', '${escapeHtml(t.members || '')}')">
+                <span class="jt-icon">&#x1f465;</span>
+                <div class="jt-info">
+                    <div class="jt-name">${escapeHtml(t.name)}</div>
+                    ${t.members ? `<div class="jt-members">${escapeHtml(t.members)}</div>` : ''}
+                </div>
+                <span style="color:var(--primary); font-size:0.82rem; font-weight:600;">Join &#x2192;</span>
+            </button>
+        `).join('');
+    }
+
+    function openTeamModal(mode) {
+        const modal = document.getElementById('teamModal');
+        const createMode = document.getElementById('teamCreateMode');
+        const joinMode = document.getElementById('teamJoinMode');
+        const title = document.getElementById('teamModalTitle');
+
+        if (mode === 'create') {
+            createMode.style.display = 'block';
+            joinMode.style.display = 'none';
+            title.textContent = 'Create a Team';
+            document.getElementById('teamNameInput').value = '';
+            document.getElementById('teamMembersInput').value = '';
+        } else if (mode === 'join') {
+            createMode.style.display = 'none';
+            joinMode.style.display = 'block';
+            title.textContent = 'Join a Team';
+            populateExistingTeams();
+        }
+
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+    }
+
+    function closeTeamModal() {
+        const modal = document.getElementById('teamModal');
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+
+    async function joinExistingTeam(teamName, members) {
+        currentTeam = {
+            name: teamName,
+            members: members,
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            joinedAt: Date.now()
+        };
+
+        if (useFirebase) {
+            try {
+                await db.collection('teams').doc(currentUser.uid).set(currentTeam);
+            } catch(e) {
+                console.error('Team save error:', e);
+            }
+        }
+        saveLocalTeam(currentTeam);
+        closeTeamModal();
+        onTeamChanged('joined');
+    }
+
+    async function createNewTeam() {
+        const name = document.getElementById('teamNameInput').value.trim();
+        const members = document.getElementById('teamMembersInput').value.trim();
+
+        if (!name) {
+            showToast('Please enter a team name');
+            return;
+        }
+
+        currentTeam = {
+            name: name,
+            members: members,
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            createdAt: Date.now()
+        };
+
+        if (useFirebase) {
+            try {
+                await db.collection('teams').doc(currentUser.uid).set(currentTeam);
+            } catch(e) {
+                console.error('Team save error:', e);
+            }
+        }
+        saveLocalTeam(currentTeam);
+        closeTeamModal();
+        onTeamChanged('created');
+    }
+
+    function openSettings() {
+        if (!currentTeam) return;
+
+        const modal = document.getElementById('settingsModal');
+        document.getElementById('settingsTeamName').textContent = currentTeam.name;
+        document.getElementById('settingsTeamMembers').textContent = currentTeam.members || '(no members listed)';
+
+        if (currentTeam.joinedAt) {
+            const date = new Date(currentTeam.joinedAt).toLocaleDateString();
+            document.getElementById('settingsTeamJoinedDate').textContent = date;
+        } else if (currentTeam.createdAt) {
+            const date = new Date(currentTeam.createdAt).toLocaleDateString();
+            document.getElementById('settingsTeamJoinedDate').textContent = date;
+        } else {
+            document.getElementById('settingsTeamJoinedDate').textContent = '(unknown)';
+        }
+
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+    }
+
+    function closeSettings() {
+        const modal = document.getElementById('settingsModal');
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+
+    function leaveTeam() {
+        if (!confirm('Are you sure you want to leave ' + currentTeam.name + '?')) return;
+
+        currentTeam = null;
+
+        if (useFirebase) {
+            try {
+                db.collection('teams').doc(currentUser.uid).delete();
+            } catch(e) {
+                console.error('Team delete error:', e);
+            }
+        }
+
+        localStorage.removeItem(TEAM_KEY + '_' + currentUser.uid);
+        closeSettings();
+        onTeamChanged('left');
+    }
+
+    function onTeamChanged(action) {
+        // Update header
+        showDashboard();
+
+        // Show/hide team banner
+        const banner = document.getElementById('teamBanner');
+        if (currentTeam) {
+            banner.style.display = 'none';
+        } else {
+            banner.style.display = 'flex';
+        }
+
+        // Show toast
+        if (action === 'created') {
+            showToast('Team "' + currentTeam.name + '" created!');
+        } else if (action === 'joined') {
+            showToast('Joined "' + currentTeam.name + '"!');
+        } else if (action === 'left') {
+            showToast('Left your team. You are now a free agent.');
+        }
+    }
+
+    // =========================================================
+    // SCREEN MANAGEMENT
+    // =========================================================
+    function showScreen(screen) {
+        document.getElementById('loginScreen').style.display = screen === 'login' ? 'flex' : 'none';
+        document.getElementById('dashboardScreen').style.display = screen === 'dashboard' ? 'block' : 'none';
+    }
+
+    function showDashboard() {
+        showScreen('dashboard');
+
+        // Update header with team info or free agent status
+        const headerBadge = document.getElementById('headerTeamBadge');
+        const settingsBtn = document.getElementById('settingsBtn');
+
+        if (currentTeam) {
+            headerBadge.innerHTML = '<span class="badge-icon">&#x1f465;</span><span id="headerTeamName">' + escapeHtml(currentTeam.name) + '</span>';
+            headerBadge.className = 'team-badge';
+            settingsBtn.style.display = 'inline-flex';
+        } else {
+            headerBadge.innerHTML = '<span class="badge-icon">&#x1f468;</span><span id="headerTeamName">Free Agent</span>';
+            headerBadge.className = 'free-agent-badge';
+            settingsBtn.style.display = 'none';
+        }
+
+        document.getElementById('headerUserName').textContent = currentUser.displayName;
+        if (currentUser.photoURL) {
+            document.getElementById('headerAvatar').src = currentUser.photoURL;
+        } else {
+            document.getElementById('headerAvatar').style.display = 'none';
+        }
+
+        loadProblems();
+    }
+
+    // =========================================================
+    // DATA LOADING
+    // =========================================================
+    async function loadProblems() {
+        if (useFirebase) {
+            try {
+                const snapshot = await db.collection('problems').orderBy('createdAt', 'desc').get();
+                allProblems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch(e) {
+                console.error('Firebase load error:', e);
+                allProblems = getLocalProblems();
+            }
+        } else {
+            allProblems = getLocalProblems();
+        }
+        renderDashboard();
+    }
+
+    // =========================================================
+    // RENDERING
+    // =========================================================
+    function renderDashboard() {
+        // Show/hide team banner based on current team status
+        const banner = document.getElementById('teamBanner');
+        if (currentTeam) {
+            banner.style.display = 'none';
+        } else {
+            banner.style.display = 'flex';
+        }
+
+        updateDashStats();
+        renderAvailableList();
+        renderMyProblemsList();
+        renderSolvedList();
+        renderAllProblemsList();
+    }
+
+    function updateDashStats() {
+        const solvedCount = allProblems.filter(p => p.status === 'solved').length;
+
+        const available = allProblems.filter(p => (p.status || 'new') === 'new');
+        const mine = allProblems.filter(p => p.claimedByTeam === currentTeam?.name && p.status !== 'solved');
+
+        document.getElementById('tabCountAvailable').textContent = available.length;
+        document.getElementById('tabCountMine').textContent = mine.length;
+        document.getElementById('tabCountSolved').textContent = solvedCount;
+        document.getElementById('tabCountAll').textContent = allProblems.length;
+    }
+
+    function renderAvailableList() {
+        const container = document.getElementById('availableList');
+        const available = allProblems.filter(p => (p.status || 'new') === 'new');
+
+        if (available.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x2705;</div>
+                    <h3>All problems have been claimed!</h3>
+                    <p>Check the public page for new submissions.</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = available.map(p => renderProblemListItem(p, 'available')).join('');
+    }
+
+    function renderMyProblemsList() {
+        const container = document.getElementById('myProblemsList');
+
+        if (!currentTeam) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x1f465;</div>
+                    <h3>Join a team to see your team's problems here</h3>
+                    <p>You're currently browsing as a free agent. Create or join a team to start claiming problems.</p>
+                </div>`;
+            return;
+        }
+
+        const mine = allProblems.filter(p => p.claimedByTeam === currentTeam.name && p.status !== 'solved');
+
+        if (mine.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x1f50d;</div>
+                    <h3>No active problems</h3>
+                    <p>Browse the Available tab to find a problem your team wants to tackle!</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = mine.map(p => renderProblemListItem(p, 'mine')).join('');
+    }
+
+    function renderSolvedList() {
+        const container = document.getElementById('solvedList');
+        const solved = allProblems.filter(p => p.status === 'solved');
+
+        if (solved.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x1f3c6;</div>
+                    <h3>No solved problems yet</h3>
+                    <p>Once a team marks a problem as solved, it will appear here.</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = solved.map(p => renderProblemListItem(p, 'solved')).join('');
+    }
+
+    function renderAllProblemsList() {
+        const container = document.getElementById('allProblemsList');
+        container.innerHTML = allProblems.map(p => renderProblemListItem(p, 'all')).join('');
+    }
+
+    function renderProblemListItem(p, context) {
+        const status = p.status || 'new';
+        const isMine = p.claimedByTeam === currentTeam?.name;
+
+        let actions = '';
+        if (context === 'available') {
+            if (!currentTeam) {
+                actions = `<button class="btn btn-disabled btn-sm" disabled>Join a team to claim</button>`;
+            } else {
+                actions = `<button class="btn btn-primary btn-sm" onclick="claimProblem('${p.id}')">&#x1f91a; Claim</button>`;
+            }
+        } else if (context === 'mine') {
+            if (status === 'claimed') {
+                actions = `
+                    <button class="btn btn-success btn-sm" onclick="updateStatus('${p.id}', 'inprogress')">&#x25b6; Start Work</button>
+                    <button class="btn btn-outline btn-sm" onclick="showEmailModal('${p.id}', 'intro')">&#x2709; Intro Email</button>
+                    <button class="btn btn-danger-outline btn-sm" onclick="unclaimProblem('${p.id}')">Unclaim</button>
+                `;
+            } else if (status === 'inprogress') {
+                actions = `
+                    <button class="btn btn-success btn-sm" onclick="updateStatus('${p.id}', 'solved')">&#x2705; Mark Solved</button>
+                    <button class="btn btn-outline btn-sm" onclick="showEmailModal('${p.id}', 'update')">&#x2709; Send Update</button>
+                `;
+            } else if (status === 'solved') {
+                actions = `
+                    <button class="btn btn-outline btn-sm" onclick="showEmailModal('${p.id}', 'solved')">&#x2709; Share Results</button>
+                `;
+            }
+        } else if (context === 'solved') {
+            if (!currentTeam) {
+                actions = '';
+            } else {
+                const solvedIsMine = p.claimedByTeam === currentTeam.name;
+                actions = solvedIsMine
+                    ? `<button class="btn btn-outline btn-sm" onclick="showEmailModal('${p.id}', 'solved')">&#x2709; Share Results</button>`
+                    : '';
+            }
+        }
+
+        return `
+            <div class="problem-list-item">
+                <div class="pli-image">
+                    ${p.photos && p.photos.length > 0
+                        ? `<img src="${p.photos[0]}" alt="${escapeHtml(p.title)}">`
+                        : `<span class="pli-placeholder">&#x1f4a1;</span>`
+                    }
+                </div>
+                <div class="pli-body">
+                    <div class="pli-top">
+                        <span class="pli-title">${escapeHtml(p.title)}</span>
+                    </div>
+                    <div class="pli-tags">
+                        <span class="tag tag-status-${status}">${STATUS_NAMES[status] || 'NEW'}</span>
+                        ${p.severity ? `<span class="tag tag-severity">${SEVERITY_EMOJIS[p.severity]} ${SEVERITY_LABELS[p.severity]}</span>` : ''}
+                        ${p.claimedByTeam ? `<span class="tag tag-team">&#x1f465; ${escapeHtml(p.claimedByTeam)}</span>` : ''}
+                        ${(p.categories || []).slice(0,2).map(c => `<span class="tag tag-category">${escapeHtml(c)}</span>`).join('')}
+                    </div>
+                    <div class="pli-desc">${escapeHtml(p.description)}</div>
+                    <div class="pli-meta">
+                        <span>by ${escapeHtml(p.submitterName || 'Anonymous')}</span>
+                        <span>${p.willingness === 'full' ? '&#x1f91d; Available as client' : p.willingness === 'some' ? '&#x1f4ac; Available for questions' : '&#x1f4e7; Email only'}</span>
+                        <span>&#x25B2; ${p.upvotes || 0}</span>
+                        <span class="comment-bubble-btn" onclick="event.preventDefault(); event.stopPropagation(); showCommentsPopup(event, '${p.id}')">&#x1f4ac; ${(p.comments || []).length}</span>
+                        <a href="#" onclick="event.preventDefault(); openProblemDetail('${p.id}')" style="color:var(--primary);">View details</a>
+                    </div>
+                </div>
+                <div class="pli-actions">
+                    ${actions}
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================
+    // TABS
+    // =========================================================
+    function switchTab(btn, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    function switchTabById(tabId) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (btn) switchTab(btn, tabId);
+    }
+
+    // =========================================================
+    // CLAIM / STATUS
+    // =========================================================
+    async function claimProblem(id) {
+        if (!currentTeam) {
+            showToast('Join a team first to claim problems');
+            return;
+        }
+
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        problem.status = 'claimed';
+        problem.claimedByTeam = currentTeam.name;
+        problem.claimedByUser = currentUser.displayName;
+        problem.claimedAt = Date.now();
+
+        await saveProblem(problem);
+        renderDashboard();
+        showToast(`Claimed "${problem.title}" for ${currentTeam.name}!`);
+
+        // Show intro email modal
+        setTimeout(() => showEmailModal(id, 'intro'), 500);
+    }
+
+    async function unclaimProblem(id) {
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        if (!confirm('Are you sure you want to unclaim this problem?')) return;
+
+        problem.status = 'new';
+        problem.claimedByTeam = '';
+        problem.claimedByUser = '';
+        problem.claimedAt = null;
+
+        await saveProblem(problem);
+        await loadProblems(); // Reload from storage to ensure clean state
+        showToast('Problem unclaimed');
+    }
+
+    async function updateStatus(id, newStatus) {
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        problem.status = newStatus;
+        if (newStatus === 'solved') {
+            problem.solvedAt = Date.now();
+        }
+
+        await saveProblem(problem);
+        renderDashboard();
+        showToast(`Status updated to "${STATUS_NAMES[newStatus]}"`);
+
+        // Prompt email for milestone updates
+        if (newStatus === 'solved') {
+            setTimeout(() => showEmailModal(id, 'solved'), 500);
+        }
+    }
+
+    async function saveProblem(problem) {
+        if (useFirebase) {
+            try {
+                const { id, ...data } = problem;
+                await db.collection('problems').doc(id).update(data);
+            } catch(e) {
+                console.error('Save error:', e);
+                saveLocalProblems(allProblems);
+            }
+        } else {
+            saveLocalProblems(allProblems);
+        }
+    }
+
+    // =========================================================
+    // EMAIL TEMPLATES
+    // =========================================================
+    function showEmailModal(problemId, type) {
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        const submitterName = problem.submitterName || 'there';
+        const submitterFirst = submitterName.split(' ')[0];
+        const teamName = currentTeam?.name || 'Our Team';
+        const studentName = currentUser?.displayName || 'A student';
+        const contactEmail = currentUser?.email || 'student@school.edu';
+        const title = problem.title;
+
+        let subject = '';
+        let body = '';
+
+        if (type === 'intro') {
+            subject = `Your Problem Bank submission: "${title}"`;
+            body = `Hi ${submitterFirst},
+
+My name is ${studentName} and I'm part of "${teamName}" in our design class. We saw your submission to the Design Problem Bank about "${title}" and we'd love to take it on as our project!
+
+We're really interested in learning more about this problem. Would you be available for a short conversation sometime in the next week or two? We'd love to hear more about:
+
+- Your firsthand experience with this problem
+- Anyone else we should talk to
+- Any additional context that might help us understand it better
+
+We can meet in person, over a video call, or whatever works best for you.
+
+Thanks for submitting this — we're excited to work on it!
+
+Best,
+${studentName}
+${teamName}
+${contactEmail}`;
+        } else if (type === 'update') {
+            subject = `Update on "${title}" — we're making progress!`;
+            body = `Hi ${submitterFirst},
+
+I wanted to give you a quick update on "${title}" — the problem you submitted to our Design Problem Bank.
+
+Our team (${teamName}) has been working on this and we're making good progress. Here's where we are:
+
+[DESCRIBE YOUR CURRENT PROGRESS]
+
+[DESCRIBE WHAT YOU'RE WORKING ON NEXT]
+
+We'd love to get your feedback on what we have so far. Would you have time for a quick check-in? We could show you our prototype / ideas and get your thoughts.
+
+Thanks again for being such a great collaborator on this!
+
+Best,
+${studentName}
+${teamName}
+${contactEmail}`;
+        } else if (type === 'solved') {
+            subject = `We solved it! Update on "${title}"`;
+            body = `Hi ${submitterFirst},
+
+Great news — our team (${teamName}) has completed our work on "${title}"!
+
+Here's what we came up with:
+
+[DESCRIBE YOUR SOLUTION]
+
+[DESCRIBE THE IMPACT / HOW IT ADDRESSES THE PROBLEM]
+
+We'd love to present our solution to you and hear what you think. Would you be available for a short meeting?
+
+Thank you so much for submitting this problem and for all your help along the way. Working with a real client on a real problem has been an incredible experience for our team.
+
+Best,
+${studentName}
+${teamName}
+${contactEmail}`;
+        }
+
+        const modal = document.getElementById('emailModalContent');
+        modal.innerHTML = `
+            <div class="modal-header">
+                <div>
+                    <h2>&#x2709; ${type === 'intro' ? 'Introduction Email' : type === 'update' ? 'Progress Update Email' : 'Solution Announcement'}</h2>
+                    <p>Copy this and send it from your school email to ${escapeHtml(submitterName)}</p>
+                </div>
+                <button class="modal-close" onclick="closeEmailModal()">&#x2715;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>To</label>
+                    <input type="text" class="form-input" value="${escapeHtml(problem.submitterContact || '')}" readonly style="background:#f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" class="form-input" id="emailSubject" value="${escapeHtml(subject)}">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <div class="helper">Edit anything in [BRACKETS] before sending. Feel free to personalize!</div>
+                    <textarea class="form-textarea" id="emailBody" rows="14" style="min-height:250px; font-size:0.88rem; line-height:1.6;">${escapeHtml(body)}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeEmailModal()">Close</button>
+                <button class="btn btn-outline" onclick="copyEmailToClipboard()">&#x1f4cb; Copy to Clipboard</button>
+                <button class="btn btn-primary" onclick="openInMailClient()">&#x2709; Open in Email App</button>
+            </div>
+        `;
+
+        document.getElementById('emailModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEmailModal() {
+        document.getElementById('emailModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function copyEmailToClipboard() {
+        const subject = document.getElementById('emailSubject').value;
+        const body = document.getElementById('emailBody').value;
+        const text = `Subject: ${subject}\n\n${body}`;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Email copied to clipboard!');
+        }).catch(() => {
+            // Fallback
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            showToast('Email copied to clipboard!');
+        });
+    }
+
+    function openInMailClient() {
+        const subject = encodeURIComponent(document.getElementById('emailSubject').value);
+        const body = encodeURIComponent(document.getElementById('emailBody').value);
+        const to = document.querySelector('#emailModalContent .form-input[readonly]')?.value || '';
+        window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank');
+    }
+
+    // =========================================================
+    // PROBLEM DETAIL MODAL
+    // =========================================================
+    function openProblemDetail(id) {
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        const status = problem.status || 'new';
+        const isMine = problem.claimedByTeam === currentTeam?.name;
+
+        const modal = document.getElementById('actionModalContent');
+        modal.innerHTML = `
+            <div class="modal-header">
+                <div>
+                    <h2>${escapeHtml(problem.title)}</h2>
+                    <p>Submitted by ${escapeHtml(problem.submitterName || 'Anonymous')}${problem.submitterRole ? ' — ' + escapeHtml(problem.submitterRole) : ''}</p>
+                </div>
+                <button class="modal-close" onclick="closeActionModal()">&#x2715;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pli-tags" style="margin-bottom:1rem;">
+                    <span class="tag tag-status-${status}">${STATUS_NAMES[status]}</span>
+                    ${problem.severity ? `<span class="tag tag-severity">${SEVERITY_EMOJIS[problem.severity]} ${SEVERITY_LABELS[problem.severity]}</span>` : ''}
+                    ${problem.claimedByTeam ? `<span class="tag tag-team">&#x1f465; ${escapeHtml(problem.claimedByTeam)}</span>` : ''}
+                    ${(problem.categories || []).map(c => `<span class="tag tag-category">${escapeHtml(c)}</span>`).join('')}
+                    ${(problem.disciplines || []).map(d => `<span class="tag tag-discipline">${escapeHtml(d)}</span>`).join('')}
+                </div>
+
+                ${problem.photos && problem.photos.length > 0 ? `
+                    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        ${problem.photos.map(url => `<img src="${url}" alt="Photo" style="width:120px;height:80px;object-fit:cover;border-radius:8px;">`).join('')}
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom:1rem;">
+                    <h4 style="font-size:0.8rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem;">The Problem</h4>
+                    <p style="font-size:0.95rem;">${escapeHtml(problem.description)}</p>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <h4 style="font-size:0.8rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem;">Who It Affects</h4>
+                    <p style="font-size:0.95rem;">${escapeHtml(problem.affects)}</p>
+                </div>
+
+                ${problem.where ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">WHERE:</strong> ${escapeHtml(problem.where)}</div>` : ''}
+                ${problem.frequency ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">FREQUENCY:</strong> ${escapeHtml(problem.frequency)}</div>` : ''}
+                ${problem.duration ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">HOW LONG:</strong> ${escapeHtml(problem.duration)}</div>` : ''}
+                ${problem.workaround ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">CURRENT WORKAROUND:</strong> ${escapeHtml(problem.workaround)}</div>` : ''}
+                ${problem.priorAttempts ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">PRIOR ATTEMPTS:</strong> ${escapeHtml(problem.priorAttempts)}</div>` : ''}
+                ${problem.constraints ? `<div style="margin-bottom:0.75rem;"><strong style="font-size:0.8rem;color:var(--text-muted);">CONSTRAINTS:</strong> ${escapeHtml(problem.constraints)}</div>` : ''}
+
+                <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+                    <h4 style="font-size:0.8rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem;">Submitter Info</h4>
+                    <p><strong>${escapeHtml(problem.submitterName)}</strong>${problem.submitterRole ? ' — ' + escapeHtml(problem.submitterRole) : ''}</p>
+                    <p style="font-size:0.88rem;">Contact: ${escapeHtml(problem.submitterContact || 'Not provided')}</p>
+                    ${problem.willingness ? `<p style="font-size:0.88rem;">Availability: <strong>${
+                        problem.willingness === 'full' ? 'All in — interviews, prototypes, site visits' :
+                        problem.willingness === 'some' ? 'Available for questions' :
+                        'Email only'
+                    }</strong></p>` : ''}
+                    ${problem.resources ? `<p style="font-size:0.88rem;">Resources: ${escapeHtml(problem.resources)}</p>` : ''}
+                </div>
+
+                <!-- Internal Notes (class only) -->
+                <div class="notes-section">
+                    <h4>&#x1f4dd; Team Notes <span style="font-weight:400;font-size:0.78rem;color:var(--text-muted);">(only visible to the class)</span></h4>
+                    <div id="notesList_${problem.id}">
+                        ${(problem.internalNotes || []).map(n => `
+                            <div class="note">
+                                <div class="note-body">
+                                    <span class="note-author">${escapeHtml(n.author)}</span>
+                                    <span class="note-time">${timeAgo(n.createdAt)}</span>
+                                    <div class="note-text">${escapeHtml(n.text)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${(problem.internalNotes || []).length === 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);">No notes yet.</p>' : ''}
+                    </div>
+                    <div class="note-input-area">
+                        <input type="text" id="noteInput_${problem.id}" placeholder="Add a team note..." onkeydown="if(event.key==='Enter') addNote('${problem.id}')">
+                        <button class="btn btn-primary btn-sm" onclick="addNote('${problem.id}')">Add</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('actionModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeActionModal() {
+        document.getElementById('actionModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // =========================================================
+    // INTERNAL NOTES
+    // =========================================================
+    async function addNote(problemId) {
+        const input = document.getElementById(`noteInput_${problemId}`);
+        const text = input.value.trim();
+        if (!text) return;
+
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        if (!problem.internalNotes) problem.internalNotes = [];
+        problem.internalNotes.push({
+            author: currentUser?.displayName || 'Student',
+            text: text,
+            createdAt: Date.now()
+        });
+
+        await saveProblem(problem);
+        input.value = '';
+        openProblemDetail(problemId); // Re-render
+        showToast('Note added');
+    }
+
+    // =========================================================
+    // COMMENTS POPUP (read-only view of public comments)
+    // =========================================================
+    function showCommentsPopup(event, problemId) {
+        closeCommentsPopup();
+
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        const comments = problem.comments || [];
+        const trigger = event.currentTarget;
+        const rect = trigger.getBoundingClientRect();
+
+        // Overlay to catch outside clicks
+        const overlay = document.createElement('div');
+        overlay.className = 'comments-popup-overlay';
+        overlay.onclick = closeCommentsPopup;
+        document.body.appendChild(overlay);
+
+        // Popup
+        const popup = document.createElement('div');
+        popup.className = 'comments-popup';
+        popup.id = 'commentsPopup';
+
+        popup.innerHTML = `
+            <div class="cp-header">
+                <span>&#x1f4ac; Public Comments (${comments.length})</span>
+                <button class="cp-close" onclick="closeCommentsPopup()">&#x2715;</button>
+            </div>
+            <div class="cp-body">
+                ${comments.length === 0 ? `
+                    <div class="cp-empty">No comments on the public page yet.</div>
+                ` : comments.map(c => `
+                    <div class="cp-comment">
+                        <div class="cp-avatar">${(c.author || 'A')[0].toUpperCase()}</div>
+                        <div>
+                            <span class="cp-author">${escapeHtml(c.author)}</span>
+                            <span class="cp-time">${timeAgo(c.createdAt)}</span>
+                            <div class="cp-text">${escapeHtml(c.text)}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="cp-hint">Comments are added on the public page</div>
+        `;
+
+        document.body.appendChild(popup);
+
+        // Position near the trigger
+        const popupWidth = 380;
+        let left = rect.left + rect.width / 2 - popupWidth / 2;
+        let top = rect.bottom + 8;
+
+        if (left < 10) left = 10;
+        if (left + popupWidth > window.innerWidth - 10) left = window.innerWidth - popupWidth - 10;
+        if (top + 300 > window.innerHeight) top = rect.top - 300 - 8;
+
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+
+        // Scroll to bottom
+        const body = popup.querySelector('.cp-body');
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function closeCommentsPopup() {
+        const popup = document.getElementById('commentsPopup');
+        if (popup) popup.remove();
+        const overlay = document.querySelector('.comments-popup-overlay');
+        if (overlay) overlay.remove();
+    }
+
+    // =========================================================
+    // UTILITIES
+    // =========================================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function timeAgo(timestamp) {
+        if (!timestamp) return '';
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        if (seconds < 2592000) return Math.floor(seconds / 86400) + 'd ago';
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    function showToast(message) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Close modals on overlay click or Escape
+    document.getElementById('actionModal').addEventListener('click', function(e) { if (e.target === this) closeActionModal(); });
+    document.getElementById('emailModal').addEventListener('click', function(e) { if (e.target === this) closeEmailModal(); });
+    document.getElementById('teamModal').addEventListener('click', function(e) { if (e.target === this) closeTeamModal(); });
+    document.getElementById('settingsModal').addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeActionModal();
+            closeEmailModal();
+            closeTeamModal();
+            closeSettings();
+        }
+    });
+
+    // =========================================================
+    // INIT
+    // =========================================================
+    // Initialize the bridge first (for file:// demo mode), then auth
+    initBridge().then(() => {
+        if (useFirebase && auth) {
+            // Firebase mode: Google auth state persists automatically.
+            // Returning users are recognized by onAuthStateChanged and
+            // go straight to their dashboard (or team setup if new).
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    onSignedIn();
+                } else {
+                    showScreen('login');
+                }
+            });
+        } else {
+            // Demo mode: always start at login screen.
+            // User clicks "Sign in with Google" (simulated with a name prompt),
+            // then we check if that user has a team on file.
+            showScreen('login');
+        }
+    });
+    </script>
+</body>
+</html>
