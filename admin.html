@@ -1804,6 +1804,7 @@
     }
 
     async function unclaimProblem(id) {
+        if (!isSuperUser) return;
         const problem = allProblems.find(p => p.id === id);
         if (!problem) return;
 
