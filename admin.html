@@ -2059,6 +2059,17 @@ ${contactEmail}`;
                     ${problem.resources ? `<p style="font-size:0.88rem;">Resources: ${escapeHtml(problem.resources)}</p>` : ''}
                 </div>
 
+                <!-- Super user controls -->
+                ${isSuperUser ? `
+                <div style="margin:1rem 0;padding:1rem;background:var(--surface);border:2px dashed var(--warning);border-radius:8px;">
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--warning);margin-bottom:0.75rem;">&#x1f6e1; SUPER USER CONTROLS</div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="startEditProblem('${problem.id}')">&#x270f; Edit</button>
+                        ${problem.claimedByTeam ? `<button class="btn btn-outline btn-sm" onclick="unclaimProblem('${problem.id}')">&#x274c; Unclaim</button>` : ''}
+                        <button class="btn btn-sm" style="background:#c62828;color:#fff;border:none;" onclick="deleteProblem('${problem.id}')">&#x1f5d1; Delete</button>
+                    </div>
+                </div>
+                ` : ''}
                 <!-- Internal Notes: visible only to claiming team and super users -->
                 ${(isSuperUser || currentTeam?.name === problem.claimedByTeam) ? `
                 <div class="notes-section">
@@ -2098,6 +2109,63 @@ ${contactEmail}`;
     // =========================================================
     // INTERNAL NOTES
     // =========================================================
+    async function deleteProblem(id) {
+        if (!isSuperUser) return;
+        if (!confirm('Permanently delete this problem? This cannot be undone.')) return;
+
+        if (useFirebase) {
+            await db.collection('problems').doc(id).delete();
+        }
+        allProblems = allProblems.filter(p => p.id !== id);
+        document.getElementById('actionModal').style.display = 'none';
+        renderDashboard();
+        showToast('Problem deleted');
+    }
+
+    function startEditProblem(id) {
+        if (!isSuperUser) return;
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        const content = document.getElementById('actionModalContent');
+        content.innerHTML = `
+            <h2 style="margin-bottom:1rem;">&#x270f; Edit Problem</h2>
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:0.25rem;">Title</label>
+                    <input id="editTitle" type="text" class="form-input" value="${escapeHtml(problem.title || '')}">
+                </div>
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:0.25rem;">Description</label>
+                    <textarea id="editDescription" class="form-input" rows="4" style="resize:vertical;">${escapeHtml(problem.description || '')}</textarea>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:0.25rem;">Category</label>
+                    <input id="editCategory" type="text" class="form-input" value="${escapeHtml(problem.category || '')}">
+                </div>
+                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                    <button class="btn btn-primary" onclick="saveEditProblem('${id}')">&#x2705; Save</button>
+                    <button class="btn btn-outline" onclick="openProblemDetail('${id}')">Cancel</button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function saveEditProblem(id) {
+        if (!isSuperUser) return;
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        problem.title = document.getElementById('editTitle').value.trim();
+        problem.description = document.getElementById('editDescription').value.trim();
+        problem.category = document.getElementById('editCategory').value.trim();
+
+        await saveProblem(problem);
+        renderDashboard();
+        openProblemDetail(id);
+        showToast('Problem updated');
+    }
+
     async function addNote(problemId) {
         const input = document.getElementById(`noteInput_${problemId}`);
         const text = input.value.trim();
