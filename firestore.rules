@@ -2,11 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Problems: public read, authenticated create/delete, anyone can update (student comments)
+    // Problems: fully public read/create/update (public submission wizard + student comments)
+    // Only authenticated admins can delete
     match /problems/{problemId} {
-      allow read: if true;
-      allow create, delete: if request.auth != null;
-      allow update: if true;
+      allow read, create, update: if true;
+      allow delete: if request.auth != null;
     }
 
     // Teams: authenticated users can only read/write their own document
