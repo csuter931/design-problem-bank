@@ -26,8 +26,16 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - Used for problem images in both index.html and admin.html
 
 ## Firestore Data Structure
-- `problems` — read: public, create/delete: authenticated only, update: public (students add comments)
+- `problems` — read/create/update: public, delete: authenticated only
 - `teams` — read/write/delete: authenticated, own document only (doc ID = user uid)
+- `config/superusers` — read: authenticated only, write: disabled (manage via Firebase console only)
+
+## Super User Role
+- Super users (teachers) are defined by email in Firestore at `config/superusers { emails: [] }`
+- The `isSuperUser` flag is set in `admin.html` during `onSignedIn()` by reading this document
+- Super users can: see all teams' notes on any problem, add notes even on solved problems, edit/delete/unclaim any problem
+- To add a new super user: edit `config/superusers` in the Firebase console and add their email to the `emails` array
+- Regular team members: can only see/add notes on problems their own team claimed; notes locked (read-only) after problem is marked solved
 
 ## Files
 - `index.html` — student-facing view (browse problems, add comments)
