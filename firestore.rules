@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Problems: public read, authenticated create/delete, anyone can update (student comments)
+    match /problems/{problemId} {
+      allow read: if true;
+      allow create, delete: if request.auth != null;
+      allow update: if true;
+    }
+
+    // Teams: authenticated users can only read/write their own document
+    match /teams/{userId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+  }
+}

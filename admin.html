@@ -7,7 +7,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <!-- Cloudinary handles image storage instead of Firebase Storage -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <style>
         /* ===== SHARED DESIGN SYSTEM ===== */
@@ -1132,16 +1132,34 @@
     // FIREBASE CONFIG (same as index.html)
     // =========================================================
     const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyAT3DSdaYx5iQJhQ2vhfktsW-46wGaBYC0",
-        authDomain: "dawson-problem-bank.firebaseapp.com",
-        projectId: "dawson-problem-bank",
-        storageBucket: "dawson-problem-bank.firebasestorage.app",
-        messagingSenderId: "652693779430",
-        appId: "1:652693779430:web:2e374d4317c126dfd55c27"
+        apiKey: "AIzaSyDqQ3rbjWSaROg4oxXRtqcWXcA8XZcict0",
+        authDomain: "dawson-problem-bank-24a9c.firebaseapp.com",
+        projectId: "dawson-problem-bank-24a9c",
+        storageBucket: "dawson-problem-bank-24a9c.firebasestorage.app",
+        messagingSenderId: "376204026497",
+        appId: "1:376204026497:web:de7a281c56ef3a60f46380"
     };
 
+    // =========================================================
+    // CLOUDINARY CONFIG
+    // =========================================================
+    const CLOUDINARY_CLOUD_NAME = 'dexhdf03b';
+    const CLOUDINARY_UPLOAD_PRESET = 'problem-bank';
+
+    async function uploadToCloudinary(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (!data.secure_url) throw new Error(data.error?.message || 'Upload failed');
+        return data.secure_url;
+    }
+
     let db = null;
-    let storage = null;
     let auth = null;
     let useFirebase = false;
     let currentUser = null;
@@ -1152,7 +1170,6 @@
         try {
             firebase.initializeApp(FIREBASE_CONFIG);
             db = firebase.firestore();
-            storage = firebase.storage();
             auth = firebase.auth();
             useFirebase = true;
             document.getElementById('configBanner').style.display = 'none';
