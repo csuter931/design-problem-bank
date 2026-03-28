@@ -2059,9 +2059,10 @@ ${contactEmail}`;
                     ${problem.resources ? `<p style="font-size:0.88rem;">Resources: ${escapeHtml(problem.resources)}</p>` : ''}
                 </div>
 
-                <!-- Internal Notes (class only) -->
+                <!-- Internal Notes: visible only to claiming team and super users -->
+                ${(isSuperUser || currentTeam?.name === problem.claimedByTeam) ? `
                 <div class="notes-section">
-                    <h4>&#x1f4dd; Team Notes <span style="font-weight:400;font-size:0.78rem;color:var(--text-muted);">(only visible to the class)</span></h4>
+                    <h4>&#x1f4dd; Team Notes <span style="font-weight:400;font-size:0.78rem;color:var(--text-muted);">(only visible to the claiming team)</span></h4>
                     <div id="notesList_${problem.id}">
                         ${(problem.internalNotes || []).map(n => `
                             <div class="note">
@@ -2074,11 +2075,14 @@ ${contactEmail}`;
                         `).join('')}
                         ${(problem.internalNotes || []).length === 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);">No notes yet.</p>' : ''}
                     </div>
+                    ${(isSuperUser || problem.status !== 'solved') ? `
                     <div class="note-input-area">
                         <input type="text" id="noteInput_${problem.id}" placeholder="Add a team note..." onkeydown="if(event.key==='Enter') addNote('${problem.id}')">
                         <button class="btn btn-primary btn-sm" onclick="addNote('${problem.id}')">Add</button>
                     </div>
+                    ` : '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Notes are locked after a problem is solved.</p>'}
                 </div>
+                ` : ''}
             </div>
         `;
 
