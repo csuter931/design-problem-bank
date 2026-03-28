@@ -2232,7 +2232,7 @@ ${contactEmail}`;
             // Handle redirect result from signInWithRedirect
             auth.getRedirectResult().catch(err => {
                 const errDiv = document.getElementById('loginError');
-                if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = err.message; }
+                if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = `${err.code}: ${err.message}`; }
             });
             // Firebase mode: Google auth state persists automatically.
             // Returning users are recognized by onAuthStateChanged and
