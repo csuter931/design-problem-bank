@@ -1164,6 +1164,7 @@
     let useFirebase = false;
     let currentUser = null;
     let currentTeam = null;
+    let isSuperUser = false;
 
     // Try to initialize Firebase
     if (FIREBASE_CONFIG.apiKey) {
@@ -1324,21 +1325,22 @@
     }
 
     function onSignedIn() {
-        // Check if this user already belongs to a team
         if (useFirebase) {
-            db.collection('teams').doc(currentUser.uid).get().then(doc => {
-                if (doc.exists) {
-                    currentTeam = doc.data();
-                } else {
-                    currentTeam = null;
-                }
-                showDashboard();
-            }).catch(() => {
-                currentTeam = getLocalTeam() || null;
-                showDashboard();
-            });
+            const teamPromise = db.collection('teams').doc(currentUser.uid).get()
+                .then(doc => { currentTeam = doc.exists ? doc.data() : null; })
+                .catch(() => { currentTeam = getLocalTeam() || null; });
+
+            const superuserPromise = db.collection('config').doc('superusers').get()
+                .then(doc => {
+                    const emails = (doc.exists && doc.data().emails) ? doc.data().emails : [];
+                    isSuperUser = emails.includes(currentUser.email);
+                })
+                .catch(() => { isSuperUser = false; });
+
+            Promise.all([teamPromise, superuserPromise]).then(() => showDashboard());
         } else {
             currentTeam = getLocalTeam() || null;
+            isSuperUser = false;
             showDashboard();
         }
     }
