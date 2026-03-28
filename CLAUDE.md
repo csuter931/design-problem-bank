@@ -37,7 +37,20 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - `.firebaserc` — links to Firebase project dawson-problem-bank-24a9c
 
 ## API Key Security
-The Firebase API key in index.html and admin.html is restricted in Google Cloud Console to only work from `https://csuter931.github.io/*`. This is intentional — Firebase API keys are public by design; security comes from Firestore rules + Auth.
+The Firebase API key in index.html and admin.html is restricted in Google Cloud Console to two domains:
+- `https://csuter931.github.io/*` — the live site
+- `https://dawson-problem-bank-24a9c.firebaseapp.com/*` — Firebase's auth handler (required for Google sign-in popup to work)
+
+If you add a third domain in the future, it must be added here too or sign-in will break.
+Firebase API keys are public by design; actual security comes from Firestore rules + Auth.
+
+## Google Sign-in Configuration
+Three things must be configured for Google sign-in to work on a new domain:
+1. **Firebase Auth authorized domains** — console.firebase.google.com → Authentication → Settings → Authorized domains
+2. **OAuth client JavaScript origins** — console.cloud.google.com → APIs & Services → Credentials → Web client → Authorized JavaScript origins
+3. **API key referrer restriction** — console.cloud.google.com → APIs & Services → Credentials → API key → Website restrictions
+
+All three were set up for `csuter931.github.io`. Sign-in uses `signInWithPopup` (not redirect) — redirect had reliability issues on GitHub Pages.
 
 ## Google Cloud Project
 - Project name: Dawson Problem Bank
