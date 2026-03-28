@@ -2230,7 +2230,12 @@ ${contactEmail}`;
     initBridge().then(() => {
         if (useFirebase && auth) {
             // Handle redirect result from signInWithRedirect
-            auth.getRedirectResult().catch(err => {
+            auth.getRedirectResult().then(result => {
+                if (result && result.user) {
+                    currentUser = result.user;
+                    onSignedIn();
+                }
+            }).catch(err => {
                 const errDiv = document.getElementById('loginError');
                 if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = `${err.code}: ${err.message}`; }
             });
@@ -2238,10 +2243,10 @@ ${contactEmail}`;
             // Returning users are recognized by onAuthStateChanged and
             // go straight to their dashboard (or team setup if new).
             auth.onAuthStateChanged(user => {
-                if (user) {
+                if (user && !currentUser) {
                     currentUser = user;
                     onSignedIn();
-                } else {
+                } else if (!user) {
                     showScreen('login');
                 }
             });
