@@ -1332,12 +1332,14 @@
 
             const superuserPromise = db.collection('config').doc('superusers').get()
                 .then(doc => {
-                    const emails = (doc.exists && doc.data().emails) ? doc.data().emails : [];
-                    isSuperUser = emails.includes(currentUser.email);
+                    const emails = (doc.exists && Array.isArray(doc.data().emails)) ? doc.data().emails : [];
+                    isSuperUser = !!(currentUser.email && emails.includes(currentUser.email));
                 })
                 .catch(() => { isSuperUser = false; });
 
-            Promise.all([teamPromise, superuserPromise]).then(() => showDashboard());
+            Promise.all([teamPromise, superuserPromise])
+                .then(() => showDashboard())
+                .catch(() => showDashboard());
         } else {
             currentTeam = getLocalTeam() || null;
             isSuperUser = false;
