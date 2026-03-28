@@ -1291,10 +1291,13 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             // Optionally restrict to school domain:
             // provider.setCustomParameters({ hd: 'dawsonschool.org' });
-            auth.signInWithRedirect(provider).catch(err => {
+            auth.signInWithPopup(provider).then(result => {
+                currentUser = result.user;
+                onSignedIn();
+            }).catch(err => {
                 const errDiv = document.getElementById('loginError');
                 errDiv.style.display = 'block';
-                errDiv.textContent = err.message;
+                errDiv.textContent = `${err.code}: ${err.message}`;
             });
         } else {
             // Demo mode — simulate login
@@ -2230,23 +2233,14 @@ ${contactEmail}`;
     initBridge().then(() => {
         if (useFirebase && auth) {
             // Handle redirect result from signInWithRedirect
-            auth.getRedirectResult().then(result => {
-                if (result && result.user) {
-                    currentUser = result.user;
-                    onSignedIn();
-                }
-            }).catch(err => {
-                const errDiv = document.getElementById('loginError');
-                if (errDiv) { errDiv.style.display = 'block'; errDiv.textContent = `${err.code}: ${err.message}`; }
-            });
             // Firebase mode: Google auth state persists automatically.
             // Returning users are recognized by onAuthStateChanged and
             // go straight to their dashboard (or team setup if new).
             auth.onAuthStateChanged(user => {
-                if (user && !currentUser) {
+                if (user) {
                     currentUser = user;
                     onSignedIn();
-                } else if (!user) {
+                } else {
                     showScreen('login');
                 }
             });
