@@ -1,5 +1,7 @@
 # Design Problem Bank — Project Context
 
+> See also: [TODO.md](./TODO.md) for outstanding tasks and future ideas.
+
 ## What this is
 A web app for Dawson School that lets teachers manage a bank of design problems, and students browse/comment on them.
 
