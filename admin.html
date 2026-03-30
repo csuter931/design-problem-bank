@@ -661,6 +661,99 @@
 
         .form-textarea { resize: vertical; min-height: 80px; }
 
+        /* ===== EDIT FORM ===== */
+        .edit-section {
+            margin: 1.5rem 0 0.25rem;
+            padding-top: 1.25rem;
+            border-top: 2px solid var(--border);
+        }
+        .edit-section-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .edit-severity-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .edit-severity-option {
+            flex: 1;
+            min-width: 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.6rem 0.3rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .edit-severity-option:hover { border-color: var(--primary-light); }
+        .edit-severity-option.selected { border-color: var(--primary); background: rgba(63,81,181,0.08); }
+        .edit-severity-option .sev-emoji { font-size: 1.4rem; line-height: 1; }
+        .edit-severity-option .sev-label { font-size: 0.62rem; color: var(--text-muted); line-height: 1.2; }
+
+        .edit-tag-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.4rem;
+        }
+        .edit-tag-option {
+            padding: 0.35rem 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .edit-tag-option:hover { border-color: var(--primary-light); }
+        .edit-tag-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .edit-willingness-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.4rem;
+        }
+        .edit-willingness-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .edit-willingness-option:hover { border-color: var(--primary-light); }
+        .edit-willingness-option.selected { border-color: var(--primary); background: rgba(63,81,181,0.08); }
+        .edit-willingness-option .w-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .edit-willingness-option .w-title { font-weight: 600; font-size: 0.88rem; }
+        .edit-willingness-option .w-desc { font-size: 0.76rem; color: var(--text-muted); }
+
+        .edit-danger-zone {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: 2px dashed #e53935;
+            border-radius: 8px;
+        }
+        .edit-danger-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #e53935;
+            margin-bottom: 0.75rem;
+        }
+
         /* ===== EMAIL TEMPLATE ===== */
         .email-template {
             background: #FAFBFC;
