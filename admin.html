@@ -1559,6 +1559,10 @@
             headerBadge.className = 'free-agent-badge';
             settingsBtn.style.display = 'none';
             document.getElementById('tabBtnMine').style.display = 'none';
+            // If currently on My Team's tab, switch to Available
+            if (document.getElementById('tabBtnMine').classList.contains('active')) {
+                switchTabById('available');
+            }
         }
 
         document.getElementById('headerUserName').textContent = currentUser.displayName;
