@@ -1001,7 +1001,7 @@
                 <button class="tab-btn active" data-tab="available" onclick="switchTab(this, 'available')">
                     &#x1f7e2; Available <span class="tab-count" id="tabCountAvailable">0</span>
                 </button>
-                <button class="tab-btn" data-tab="myproblems" onclick="switchTab(this, 'myproblems')">
+                <button class="tab-btn" id="tabBtnMine" data-tab="myproblems" onclick="switchTab(this, 'myproblems')">
                     &#x1f4cc; My Team's Problems <span class="tab-count" id="tabCountMine">0</span>
                 </button>
                 <button class="tab-btn" data-tab="solved" onclick="switchTab(this, 'solved')">
@@ -1050,11 +1050,6 @@
                         <label>Team Name</label>
                         <div class="helper">Pick something memorable! e.g., "Design Thinkers" or "Team Prototype"</div>
                         <input type="text" class="form-input" id="teamNameInput" placeholder="Enter your team name..." maxlength="40">
-                    </div>
-                    <div class="form-group">
-                        <label>Team Members</label>
-                        <div class="helper">List your team members (this helps your teacher track groups)</div>
-                        <textarea class="form-textarea" id="teamMembersInput" placeholder="e.g., Alex, Jordan, Sam" rows="3"></textarea>
                     </div>
                     <button class="btn btn-primary" onclick="createNewTeam()" style="width:100%; justify-content:center; font-size:1rem; padding:0.8rem;">
                         &#x1f680; Create Team
@@ -1558,10 +1553,12 @@
             headerBadge.innerHTML = '<span class="badge-icon">&#x1f465;</span><span id="headerTeamName">' + escapeHtml(currentTeam.name) + '</span>';
             headerBadge.className = 'team-badge';
             settingsBtn.style.display = 'inline-flex';
+            document.getElementById('tabBtnMine').style.display = '';
         } else {
             headerBadge.innerHTML = '<span class="badge-icon">&#x1f468;</span><span id="headerTeamName">Free Agent</span>';
             headerBadge.className = 'free-agent-badge';
             settingsBtn.style.display = 'none';
+            document.getElementById('tabBtnMine').style.display = 'none';
         }
 
         document.getElementById('headerUserName').textContent = currentUser.displayName;
@@ -1710,7 +1707,7 @@
                 `;
             } else if (status === 'inprogress') {
                 actions = `
-                    <button class="btn btn-success btn-sm" onclick="updateStatus('${p.id}', 'solved')">&#x2705; Mark Solved</button>
+                    <button class="btn btn-warning btn-sm" onclick="updateStatus('${p.id}', 'solved')">Mark Solved</button>
                     <button class="btn btn-outline btn-sm" onclick="showEmailModal('${p.id}', 'update')">&#x2709; Send Update</button>
                 `;
             } else if (status === 'solved') {
