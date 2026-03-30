@@ -1399,7 +1399,6 @@
             joinMode.style.display = 'none';
             title.textContent = 'Create a Team';
             document.getElementById('teamNameInput').value = '';
-            document.getElementById('teamMembersInput').value = '';
         } else if (mode === 'join') {
             createMode.style.display = 'none';
             joinMode.style.display = 'block';
@@ -1440,7 +1439,6 @@
 
     async function createNewTeam() {
         const name = document.getElementById('teamNameInput').value.trim();
-        const members = document.getElementById('teamMembersInput').value.trim();
 
         if (!name) {
             showToast('Please enter a team name');
@@ -1449,7 +1447,7 @@
 
         currentTeam = {
             name: name,
-            members: members,
+            members: '',
             userId: currentUser.uid,
             userEmail: currentUser.email,
             createdAt: Date.now()
