@@ -3,7 +3,8 @@
 Last updated: 2026-03-30
 
 ## Bugs / Things to Test
-- [ ] Verify super user controls work end-to-end (edit, delete, unclaim)
+- [x] Super user edit form — full scrollable form implemented (2026-03-30); all fields editable, delete/save/cancel footer
+- [ ] Verify super user delete and unclaim work end-to-end (edit is done; delete uses closeActionModal now)
 - [ ] Verify notes visibility is correct for different user types (super user, claiming team, other teams)
 - [ ] Test note locking on solved problems
 - [ ] Confirm "My Team's Problems" tab hides/shows correctly when joining/leaving teams
@@ -11,6 +12,7 @@ Last updated: 2026-03-30
 
 ## Code Cleanup
 - [ ] `createNewTeam()` still references `teamMembersInput` internally — removed from UI but may still be in the save logic. Verify and clean up.
+- [ ] `.edit-danger-zone` and `.edit-danger-label` CSS classes in admin.html are unused (danger zone was removed in favour of inline footer buttons). Safe to delete.
 
 ## Features to Brainstorm
 - [ ] Post-claim project management — what tools teams need after claiming a problem (e.g. task tracking, milestones, file sharing)
