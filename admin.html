@@ -2400,16 +2400,9 @@ ${contactEmail}`;
                     <textarea class="form-textarea" id="editResources" rows="2">${escapeHtml(problem.resources || '')}</textarea>
                 </div>
 
-                <div class="edit-danger-zone">
-                    <div class="edit-danger-label">&#x26a0; Danger Zone</div>
-                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                        ${problem.claimedByTeam ? `<button class="btn btn-outline btn-sm" onclick="unclaimProblem('${id}')">&#x274c; Unclaim from ${escapeHtml(problem.claimedByTeam)}</button>` : ''}
-                        <button class="btn btn-sm" style="background:var(--danger);color:#fff;border:none;" onclick="deleteProblem('${id}')">&#x1f5d1; Delete Problem</button>
-                    </div>
-                </div>
-
                 <div style="display:flex;gap:0.5rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
                     <button class="btn btn-primary" onclick="saveEditProblem('${id}')">&#x2705; Save Changes</button>
+                    <button class="btn btn-sm" style="background:var(--danger);color:#fff;border:none;" onclick="deleteProblem('${id}')">&#x1f5d1; Delete</button>
                     <button class="btn btn-outline" onclick="openProblemDetail('${id}')">Cancel</button>
                 </div>
 
