@@ -2211,7 +2211,7 @@ ${contactEmail}`;
             await db.collection('problems').doc(id).delete();
         }
         allProblems = allProblems.filter(p => p.id !== id);
-        document.getElementById('actionModal').style.display = 'none';
+        closeActionModal();
         renderDashboard();
         showToast('Problem deleted');
     }
@@ -2424,9 +2424,35 @@ ${contactEmail}`;
         const problem = allProblems.find(p => p.id === id);
         if (!problem) return;
 
-        problem.title = document.getElementById('editTitle').value.trim();
-        problem.description = document.getElementById('editDescription').value.trim();
-        problem.category = document.getElementById('editCategory').value.trim();
+        const title = document.getElementById('editTitle').value.trim();
+        const description = document.getElementById('editDescription').value.trim();
+        const affects = document.getElementById('editAffects').value.trim();
+        if (!title || !description || !affects) {
+            showToast('Title, description, and who it affects are required');
+            return;
+        }
+
+        const sevEl = document.querySelector('#editSeverityPicker .edit-severity-option.selected');
+        const willingnessEl = document.querySelector('#editWillingnessOptions .edit-willingness-option.selected');
+
+        problem.title = title;
+        problem.description = description;
+        problem.affects = affects;
+        problem.photos = [...editingPhotos];
+        problem.severity = sevEl ? parseInt(sevEl.dataset.severity) : (problem.severity || null);
+        problem.where = document.getElementById('editWhere').value.trim();
+        problem.frequency = document.getElementById('editFrequency').value;
+        problem.duration = document.getElementById('editDuration').value.trim();
+        problem.workaround = document.getElementById('editWorkaround').value.trim();
+        problem.priorAttempts = document.getElementById('editPriorAttempts').value.trim();
+        problem.constraints = document.getElementById('editConstraints').value.trim();
+        problem.categories = [...document.querySelectorAll('#editCategoryTags .edit-tag-option.selected')].map(el => el.dataset.value);
+        problem.disciplines = [...document.querySelectorAll('#editDisciplineTags .edit-tag-option.selected')].map(el => el.dataset.value);
+        problem.submitterName = document.getElementById('editSubmitterName').value.trim();
+        problem.submitterRole = document.getElementById('editSubmitterRole').value.trim();
+        problem.submitterContact = document.getElementById('editSubmitterContact').value.trim();
+        problem.willingness = willingnessEl ? willingnessEl.dataset.value : (problem.willingness || null);
+        problem.resources = document.getElementById('editResources').value.trim();
 
         await saveProblem(problem);
         renderDashboard();
