@@ -7,3 +7,10 @@ desktop.ini
 .vscode/
 *.swp
 .superpowers/
+
+# Claude Code (per-machine settings)
+.claude/
+
+# Firebase CLI cache and logs
+.firebase/
+firebase-debug.log
