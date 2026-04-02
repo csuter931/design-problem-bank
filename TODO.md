@@ -11,8 +11,8 @@ Last updated: 2026-03-30
 - [ ] Test full problem submission wizard end-to-end (public page → Cloudinary photo → Firestore)
 
 ## Code Cleanup
-- [ ] `createNewTeam()` still references `teamMembersInput` internally — removed from UI but may still be in the save logic. Verify and clean up.
-- [ ] `.edit-danger-zone` and `.edit-danger-label` CSS classes in admin.html are unused (danger zone was removed in favour of inline footer buttons). Safe to delete.
+- [x] `createNewTeam()` — removed leftover `members: ''` property (2026-04-02)
+- [x] `.edit-danger-zone` and `.edit-danger-label` CSS classes deleted from admin.html (2026-04-02)
 
 ## Features to Brainstorm
 - [ ] Post-claim project management — what tools teams need after claiming a problem (e.g. task tracking, milestones, file sharing)
