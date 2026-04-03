@@ -102,24 +102,29 @@ const FILTERS = [
 ]
 
 // ── ProblemCard ──────────────────────────────────────────
-function ProblemCard({ problem }: { problem: Problem }) {
+type CardSize = 'featured' | 'medium' | 'small'
+
+function ProblemCard({ problem, size = 'small' }: { problem: Problem; size?: CardSize }) {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
+  const imgH = size === 'featured' ? 'h-[260px]' : size === 'medium' ? 'h-[180px]' : 'h-[140px]'
+  const titleSize = size === 'featured' ? 'text-2xl' : size === 'medium' ? 'text-base' : 'text-sm'
+  const descClamp = size === 'featured' ? 'line-clamp-4' : 'line-clamp-2'
+  const pad = size === 'featured' ? 'p-6' : 'p-4'
 
   return (
-    <div className="flex-shrink-0 w-[300px] bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-transform duration-300 flex flex-col snap-start">
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 flex flex-col h-full">
       {/* Image */}
-      <div className="h-[160px] bg-white/[0.04] flex items-center justify-center overflow-hidden">
+      <div className={`${imgH} bg-white/[0.04] flex items-center justify-center overflow-hidden flex-shrink-0`}>
         {problem.photos?.[0] ? (
           <img src={problem.photos[0]} alt={problem.title} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-5xl opacity-20">💡</span>
+          <span className={`opacity-20 ${size === 'featured' ? 'text-7xl' : 'text-4xl'}`}>💡</span>
         )}
       </div>
 
       {/* Body */}
-      <div className="p-4 flex flex-col flex-1">
-        {/* Tags */}
+      <div className={`${pad} flex flex-col flex-1`}>
         <div className="flex flex-wrap gap-1.5 mb-3">
           <span className={`text-[0.7rem] font-semibold px-2 py-0.5 rounded-full border ${statusColor}`}>
             {STATUS_LABELS[status]}
@@ -136,17 +141,14 @@ function ProblemCard({ problem }: { problem: Problem }) {
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="font-bold text-white text-base leading-snug mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h3 className={`font-bold text-white ${titleSize} leading-snug mb-2`} style={{ fontFamily: 'Manrope, sans-serif' }}>
           {problem.title}
         </h3>
 
-        {/* Description */}
-        <p className="text-white/50 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
+        <p className={`text-white/50 text-xs leading-relaxed flex-1 ${descClamp} mb-4`}>
           {problem.description}
         </p>
 
-        {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
           <span className="text-white/35 text-xs">by {problem.submitterName || 'Anonymous'}</span>
           <div className="flex items-center gap-3 text-white/35 text-xs">
@@ -155,6 +157,39 @@ function ProblemCard({ problem }: { problem: Problem }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── BentoGrid ────────────────────────────────────────────
+function BentoGrid({ problems }: { problems: Problem[] }) {
+  if (problems.length === 0) return (
+    <div className="text-center py-16 text-white/40">No problems match your filter.</div>
+  )
+
+  // Bento pattern: featured(2col,2row), medium, medium, then 4-col small repeating
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-auto">
+      {problems.map((p, i) => {
+        // First card: featured — spans 2 cols and 2 rows
+        if (i === 0) return (
+          <div key={p.id} className="lg:col-span-2 lg:row-span-2">
+            <ProblemCard problem={p} size="featured" />
+          </div>
+        )
+        // Cards 1–2: medium — 1 col each
+        if (i === 1 || i === 2) return (
+          <div key={p.id} className="lg:col-span-1">
+            <ProblemCard problem={p} size="medium" />
+          </div>
+        )
+        // Rest: small, 1 col each
+        return (
+          <div key={p.id} className="lg:col-span-1">
+            <ProblemCard problem={p} size="small" />
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -198,10 +233,6 @@ function App() {
       return (b.createdAt || 0) - (a.createdAt || 0)
     })
 
-  const scrollCarousel = (dir: 'left' | 'right') => {
-    const el = document.getElementById('carouselTrack')
-    if (el) el.scrollBy({ left: dir === 'left' ? -el.clientWidth * 0.8 : el.clientWidth * 0.8, behavior: 'smooth' })
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -301,34 +332,13 @@ function App() {
           </select>
         </div>
 
-        {/* Carousel */}
-        <div className="relative group px-2 pb-12">
-          <button
-            onClick={() => scrollCarousel('left')}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/[0.08] border border-white/[0.15] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20"
-          >
-            ‹
-          </button>
-
+        {/* Bento Grid */}
+        <div className="max-w-7xl mx-auto px-6 pb-16 pt-2">
           {loading ? (
             <div className="text-center py-16 text-white/40">Loading problems…</div>
-          ) : visible.length === 0 ? (
-            <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
-            <div
-              id="carouselTrack"
-              className="flex gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-10 pb-2"
-            >
-              {visible.map(p => <ProblemCard key={p.id} problem={p} />)}
-            </div>
+            <BentoGrid problems={visible} />
           )}
-
-          <button
-            onClick={() => scrollCarousel('right')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/[0.08] border border-white/[0.15] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20"
-          >
-            ›
-          </button>
         </div>
 
       </section>
