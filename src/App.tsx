@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { collection, orderBy, query, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { SubmitWizard } from '@/components/SubmitWizard'
-import './index.css'
 
 // ── Sample problems (preview data) ──────────────────────
 const SAMPLE_PROBLEMS: Problem[] = [
