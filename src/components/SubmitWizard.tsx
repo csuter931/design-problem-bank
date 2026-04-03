@@ -145,7 +145,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
   const helperCls = 'text-xs text-white/35 mb-2'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 pt-20" onClick={e => e.target === e.currentTarget && onClose()}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
