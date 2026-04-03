@@ -282,6 +282,10 @@ export function SubmitWizard({ onClose }: WizardProps) {
                     <textarea value={workaround} onChange={e => setWorkaround(e.target.value)} rows={2} placeholder="How do people deal with this right now?" className={`${inputCls()} resize-none`} />
                   </div>
                   <div>
+                    <label className={labelCls}>Has anyone tried to solve this before?</label>
+                    <textarea value={priorAttempts} onChange={e => setPriorAttempts(e.target.value)} rows={2} placeholder="Any past solutions that didn't stick…" className={`${inputCls()} resize-none`} />
+                  </div>
+                  <div>
                     <label className={labelCls}>Known constraints</label>
                     <textarea value={constraints} onChange={e => setConstraints(e.target.value)} rows={2} placeholder="Regulations, space limits, budget constraints…" className={`${inputCls()} resize-none`} />
                   </div>
