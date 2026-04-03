@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Problem Bank</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <!-- Cloudinary handles image storage instead of Firebase Storage -->
+    <style>
+        /* ===== CSS RESET & BASE ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #2D5A8E;
+            --primary-light: #4A7AB5;
+            --primary-dark: #1E3D5F;
+            --accent: #E8913A;
+            --accent-light: #F5A855;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #E53935;
+            --bg: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --text: #2C3E50;
+            --text-light: #6B7C93;
+            --text-muted: #9BAABD;
+            --border: #E1E8F0;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.25s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ===== HEADER ===== */
+        .site-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-brand .logo {
+            font-size: 1.8rem;
+        }
+
+        .header-brand h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-brand .subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .header-stat {
+            text-align: center;
+            padding: 0 1rem;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .header-stat:last-of-type {
+            border-right: none;
+        }
+
+        .header-stat .stat-num {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .header-stat .stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.8;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(232, 145, 58, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-light);
+            padding: 0.4rem 0.8rem;
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(232,145,58,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .hero h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+
+        .hero .btn {
+            font-size: 1.1rem;
+            padding: 0.8rem 2rem;
+        }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.7rem 1rem 0.7rem 2.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            background: white;
+            transition: border-color var(--transition);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 0.4rem 0.9rem;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: white;
+            color: var(--text-light);
+        }
+
+        .chip:hover, .chip.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+
+        .sort-select {
+            padding: 0.5rem 0.8rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            background: white;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        /* ===== GALLERY GRID ===== */
+        .gallery {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* ===== PROBLEM CARD ===== */
+        .problem-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all var(--transition);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .problem-card.highlight {
+            animation: cardHighlight 2s ease;
+        }
+
+        @keyframes cardHighlight {
+            0% { box-shadow: 0 0 0 4px var(--accent); transform: scale(1.02); }
+            100% { box-shadow: var(--shadow); transform: scale(1); }
+        }
+
+        .card-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #e8edf2, #d5dde8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-image .placeholder-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .card-body {
+            padding: 1.2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-category { background: #E3F2FD; color: #1565C0; }
+        .tag-discipline { background: #FFF3E0; color: #E65100; }
+        .tag-status-new { background: #E8F5E9; color: #2E7D32; }
+        .tag-status-claimed { background: #FFF8E1; color: #F57F17; }
+        .tag-status-inprogress { background: #E3F2FD; color: #1565C0; }
+        .tag-status-solved { background: #F3E5F5; color: #7B1FA2; }
+        .tag-team { background: #E8EAF6; color: #283593; }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .card-description {
+            font-size: 0.88rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-submitter {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .card-action {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color var(--transition);
+            background: none;
+            border: none;
+            padding: 0.2rem;
+        }
+
+        .card-action:hover {
+            color: var(--primary);
+        }
+
+        .card-action.upvoted {
+            color: var(--accent);
+        }
+
+        .severity-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.82rem;
+        }
+
+        .tag-severity {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
+        /* ===== QUICK COMMENT POPUP ===== */
+        .quick-comment-popup {
+            position: fixed;
+            z-index: 250;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 360px;
+            max-width: 90vw;
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: popIn 0.2s ease;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .quick-comment-popup .qc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .quick-comment-popup .qc-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            padding: 0.2rem;
+        }
+
+        .quick-comment-popup .qc-close:hover {
+            color: var(--text);
+        }
+
+        .quick-comment-popup .qc-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1rem;
+            max-height: 220px;
+        }
+
+        .quick-comment-popup .qc-body .comment {
+            margin-bottom: 0.75rem;
+        }
+
+        .quick-comment-popup .qc-empty {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .quick-comment-popup .qc-input {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .quick-comment-popup .qc-input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .quick-comment-popup .qc-input input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-family: inherit;
+        }
+
+        .quick-comment-popup .qc-input input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+
+        .quick-comment-popup .qc-input button {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.82rem;
+        }
+
+        .quick-comment-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 240;
+            background: transparent;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        /* ===== MODAL OVERLAY ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 720px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        /* ===== WIZARD ===== */
+        .wizard-header {
+            padding: 1.5rem 2rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .wizard-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .wizard-header p {
+            font-size: 0.88rem;
+            color: var(--text-light);
+        }
+
+        .wizard-progress {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem 2rem 0;
+            gap: 0;
+        }
+
+        .wizard-step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .wizard-step-indicator.active {
+            color: var(--primary);
+        }
+
+        .wizard-step-indicator.completed {
+            color: var(--success);
+        }
+
+        .step-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: var(--border);
+            color: var(--text-muted);
+            transition: all var(--transition);
+        }
+
+        .wizard-step-indicator.active .step-dot {
+            background: var(--primary);
+            color: white;
+        }
+
+        .wizard-step-indicator.completed .step-dot {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-connector {
+            flex: 1;
+            height: 2px;
+            background: var(--border);
+            margin: 0 0.5rem;
+            min-width: 20px;
+        }
+
+        .step-connector.completed {
+            background: var(--success);
+        }
+
+        .wizard-body {
+            padding: 1.5rem 2rem;
+        }
+
+        .wizard-step {
+            display: none;
+        }
+
+        .wizard-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .wizard-footer {
+            padding: 1rem 2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+
+        .form-group label .required {
+            color: var(--danger);
+            margin-left: 2px;
+        }
+
+        .form-group label .optional {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+
+        .form-group .helper {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color var(--transition);
+            background: white;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-input.error, .form-textarea.error {
+            border-color: var(--danger);
+        }
+
+        .error-message {
+            font-size: 0.78rem;
+            color: var(--danger);
+            margin-top: 0.3rem;
+            display: none;
+        }
+
+        .form-input.error + .error-message,
+        .form-textarea.error + .error-message {
+            display: block;
+        }
+
+        /* ===== SEVERITY PICKER (Emoji Pain Scale) ===== */
+        .severity-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .severity-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.7rem 0.9rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            flex: 1;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .severity-option:hover {
+            border-color: var(--primary-light);
+            background: #f0f4ff;
+        }
+
+        .severity-option.selected {
+            border-color: var(--primary);
+            background: #e8f0fe;
+        }
+
+        .severity-option .emoji {
+            font-size: 1.8rem;
+        }
+
+        .severity-option .severity-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        /* ===== PHOTO UPLOAD ===== */
+        .photo-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: #fafbfc;
+        }
+
+        .photo-upload-area:hover, .photo-upload-area.dragover {
+            border-color: var(--primary-light);
+            background: #f0f4ff;
+        }
+
+        .photo-upload-area .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .photo-upload-area p {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .photo-upload-area .upload-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        .photo-previews {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .photo-preview {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-preview .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== TAG INPUT ===== */
+        .tag-input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag-option {
+            padding: 0.4rem 0.9rem;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            user-select: none;
+        }
+
+        .tag-option:hover {
+            border-color: var(--primary-light);
+        }
+
+        .tag-option.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* ===== WILLINGNESS SELECTOR ===== */
+        .willingness-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .willingness-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .willingness-option:hover {
+            border-color: var(--primary-light);
+            background: #f8faff;
+        }
+
+        .willingness-option.selected {
+            border-color: var(--primary);
+            background: #e8f0fe;
+        }
+
+        .willingness-option .w-icon {
+            font-size: 1.3rem;
+        }
+
+        .willingness-option .w-text {
+            flex: 1;
+        }
+
+        .willingness-option .w-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .willingness-option .w-desc {
+            font-size: 0.78rem;
+            color: var(--text-light);
+        }
+
+        /* ===== DETAIL MODAL ===== */
+        .detail-header {
+            position: relative;
+        }
+
+        .detail-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #e8edf2, #d5dde8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .detail-body {
+            padding: 1.5rem 2rem 2rem;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-section {
+            margin-top: 1.5rem;
+        }
+
+        .detail-section h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-section p {
+            font-size: 0.95rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ===== COMMENTS ===== */
+        .comments-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .comments-section h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .comment {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .comment-body {
+            flex: 1;
+        }
+
+        .comment-author {
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .comment-time {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+
+        .comment-text {
+            font-size: 0.88rem;
+            color: var(--text);
+            margin-top: 0.2rem;
+        }
+
+        .comment-input-area {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .comment-input-area input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+        }
+
+        .comment-input-area input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+
+        /* ===== SUCCESS SCREEN ===== */
+        .success-screen {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .success-screen .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-screen h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .success-screen p {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: var(--text);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInToast 0.3s ease;
+        }
+
+        @keyframes slideInToast {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== LOADING SPINNER ===== */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== FIREBASE CONFIG BANNER ===== */
+        .config-banner {
+            background: #FFF3E0;
+            border-bottom: 2px solid #FFE0B2;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 0.88rem;
+            color: #E65100;
+        }
+
+        .config-banner code {
+            background: rgba(0,0,0,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+
+            .header-stat {
+                display: none;
+            }
+
+            .hero h2 {
+                font-size: 1.6rem;
+            }
+
+            .hero p {
+                font-size: 0.95rem;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .wizard-progress {
+                padding: 1rem;
+            }
+
+            .wizard-step-indicator span:not(.step-dot) {
+                display: none;
+            }
+
+            .wizard-body {
+                padding: 1.5rem 1.2rem;
+            }
+
+            .wizard-header {
+                padding: 1.2rem;
+            }
+
+            .wizard-footer {
+                padding: 1rem 1.2rem 1.5rem;
+            }
+
+            .severity-picker {
+                gap: 0.35rem;
+            }
+
+            .severity-option {
+                min-width: 55px;
+                padding: 0.5rem;
+            }
+
+            .detail-body {
+                padding: 1.2rem;
+            }
+
+            .modal {
+                max-height: 95vh;
+                margin: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-brand h1 {
+                font-size: 1.1rem;
+            }
+
+            .severity-option .severity-label {
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="site-header">
+        <div class="header-content">
+            <div class="header-brand">
+                <span class="logo">&#x1f4a1;</span>
+                <div>
+                    <h1>Design Problem Bank</h1>
+                    <div class="subtitle">Real problems. Creative solutions.</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="header-stat" id="stat-problems">
+                    <div class="stat-num">0</div>
+                    <div class="stat-label">Problems</div>
+                </div>
+                <div class="header-stat" id="stat-available">
+                    <div class="stat-num">0</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="header-stat" id="stat-solved">
+                    <div class="stat-num">0</div>
+                    <div class="stat-label">Solved</div>
+                </div>
+                <a href="admin.html" class="btn btn-secondary" style="font-size:0.82rem;">&#x1f393; Student Login</a>
+                <button class="btn btn-primary" onclick="openWizard()">
+                    &#x2795; Submit a Problem
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- FIREBASE CONFIG BANNER (shown until Firebase is configured) -->
+    <div class="config-banner" id="configBanner">
+        &#x1f527; <strong>Setup needed:</strong> This page needs a Firebase project to store submissions.
+        See the included <code>SETUP.md</code> file for quick setup instructions.
+        <em>Demo mode is active &mdash; submissions are stored locally for preview.</em>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="heroSection">
+        <div class="hero-content">
+            <h2>Got a problem that needs solving?</h2>
+            <p>Our design students tackle real-world challenges from our community. Submit a problem you've encountered &mdash; big or small &mdash; and a student team may choose it as their next project.</p>
+            <button class="btn btn-primary" onclick="openWizard()">
+                &#x1f4dd; Submit Your Problem
+            </button>
+        </div>
+    </section>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <div class="search-box">
+            <span class="search-icon">&#x1f50d;</span>
+            <input type="text" id="searchInput" placeholder="Search problems..." oninput="filterProblems()">
+        </div>
+        <div class="filter-chips" id="filterChips">
+            <span class="chip active" data-filter="all" onclick="setFilter(this, 'all')">All</span>
+            <span class="chip" data-filter="new" onclick="setFilter(this, 'new')">&#x1f7e2; New</span>
+            <span class="chip" data-filter="claimed" onclick="setFilter(this, 'claimed')">&#x1f7e1; Claimed</span>
+            <span class="chip" data-filter="inprogress" onclick="setFilter(this, 'inprogress')">&#x1f535; In Progress</span>
+            <span class="chip" data-filter="solved" onclick="setFilter(this, 'solved')">&#x1f7e3; Solved</span>
+        </div>
+        <select class="sort-select" id="sortSelect" onchange="filterProblems()">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="upvotes">Most upvoted</option>
+            <option value="severity">Highest severity</option>
+        </select>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="gallery" id="galleryGrid">
+        <!-- Cards populated by JS -->
+    </div>
+
+    <!-- SUBMIT WIZARD MODAL -->
+    <div class="modal-overlay" id="wizardModal">
+        <div class="modal" id="wizardContent">
+
+            <!-- Wizard Progress -->
+            <div class="wizard-progress" id="wizardProgress">
+                <div class="wizard-step-indicator active" data-step="1">
+                    <span class="step-dot">1</span>
+                    <span>Describe</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="wizard-step-indicator" data-step="2">
+                    <span class="step-dot">2</span>
+                    <span>Details</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="wizard-step-indicator" data-step="3">
+                    <span class="step-dot">3</span>
+                    <span>About You</span>
+                </div>
+            </div>
+
+            <!-- STEP 1: Describe the Problem -->
+            <div class="wizard-step active" data-step="1">
+                <div class="wizard-header">
+                    <h2>Describe the Problem</h2>
+                    <p>Tell us about a real-world problem you've encountered. What's broken, frustrating, or could be better?</p>
+                </div>
+                <div class="wizard-body">
+                    <div class="form-group">
+                        <label>Problem Title <span class="required">*</span></label>
+                        <div class="helper">A short, descriptive name for the problem</div>
+                        <input type="text" class="form-input" id="problemTitle" placeholder='e.g., "Cafeteria lunch line is too slow"' maxlength="100">
+                        <div class="error-message">Please enter a title for the problem</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>What's the problem? <span class="required">*</span></label>
+                        <div class="helper">Describe the problem in your own words. What happens? Why is it frustrating?</div>
+                        <textarea class="form-textarea" id="problemDescription" placeholder="Describe the problem you've observed..." rows="4"></textarea>
+                        <div class="error-message">Please describe the problem</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Who does this affect? <span class="required">*</span></label>
+                        <div class="helper">Who experiences this problem? Students, teachers, parents, community members?</div>
+                        <input type="text" class="form-input" id="problemAffects" placeholder='e.g., "All students and staff who eat lunch on campus"'>
+                        <div class="error-message">Please describe who is affected</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Photos <span class="optional">(optional but helpful!)</span></label>
+                        <div class="helper">A picture is worth a thousand words &mdash; help students see the problem</div>
+                        <div class="photo-upload-area" id="photoUpload" onclick="document.getElementById('photoInput').click()"
+                             ondragover="event.preventDefault(); this.classList.add('dragover')"
+                             ondragleave="this.classList.remove('dragover')"
+                             ondrop="handlePhotoDrop(event)">
+                            <div class="upload-icon">&#x1f4f7;</div>
+                            <p>Click to upload or drag photos here</p>
+                            <div class="upload-hint">JPG, PNG, or GIF &bull; Up to 5MB each</div>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event)">
+                        <div class="photo-previews" id="photoPreviews"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Add Details -->
+            <div class="wizard-step" data-step="2">
+                <div class="wizard-header">
+                    <h2>Add Some Details</h2>
+                    <p>These help students understand the scope and context. Fill in what you can &mdash; everything here is optional.</p>
+                </div>
+                <div class="wizard-body">
+                    <div class="form-group">
+                        <label>How severe is this problem?</label>
+                        <div class="helper">Think of it like a doctor's pain scale &mdash; how much does this problem hurt?</div>
+                        <div class="severity-picker" id="severityPicker">
+                            <div class="severity-option" data-severity="1" onclick="selectSeverity(this)">
+                                <span class="emoji">&#x1f600;</span>
+                                <span class="severity-label">Minor<br>annoyance</span>
+                            </div>
+                            <div class="severity-option" data-severity="2" onclick="selectSeverity(this)">
+                                <span class="emoji">&#x1f615;</span>
+                                <span class="severity-label">Somewhat<br>frustrating</span>
+                            </div>
+                            <div class="severity-option" data-severity="3" onclick="selectSeverity(this)">
+                                <span class="emoji">&#x1f61f;</span>
+                                <span class="severity-label">Quite<br>painful</span>
+                            </div>
+                            <div class="severity-option" data-severity="4" onclick="selectSeverity(this)">
+                                <span class="emoji">&#x1f62b;</span>
+                                <span class="severity-label">Very<br>serious</span>
+                            </div>
+                            <div class="severity-option" data-severity="5" onclick="selectSeverity(this)">
+                                <span class="emoji">&#x1f631;</span>
+                                <span class="severity-label">Critical /<br>urgent</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Where does this happen? <span class="optional">(optional)</span></label>
+                        <input type="text" class="form-input" id="problemWhere" placeholder='e.g., "Main campus cafeteria" or "The parking lot"'>
+                    </div>
+
+                    <div class="form-group">
+                        <label>How often does this occur? <span class="optional">(optional)</span></label>
+                        <select class="form-select" id="problemFrequency">
+                            <option value="">Select frequency...</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">A few times a week</option>
+                            <option value="monthly">A few times a month</option>
+                            <option value="occasionally">Occasionally</option>
+                            <option value="seasonal">Seasonally</option>
+                            <option value="once">One-time event</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>How long has this been a problem? <span class="optional">(optional)</span></label>
+                        <input type="text" class="form-input" id="problemDuration" placeholder='e.g., "Since the building opened" or "Just started this year"'>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Current workaround <span class="optional">(optional)</span></label>
+                        <div class="helper">How do people deal with this right now?</div>
+                        <textarea class="form-textarea" id="problemWorkaround" placeholder="Describe any workarounds people currently use..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Has anyone tried to solve this before? <span class="optional">(optional)</span></label>
+                        <textarea class="form-textarea" id="problemPriorAttempts" placeholder="Any past solutions that didn't stick or only partially worked..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Known constraints <span class="optional">(optional)</span></label>
+                        <div class="helper">Anything students should know about &mdash; regulations, space limits, etc.</div>
+                        <textarea class="form-textarea" id="problemConstraints" placeholder="Any limitations or rules to keep in mind..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category <span class="optional">(select any that apply)</span></label>
+                        <div class="tag-input-group" id="categoryTags">
+                            <span class="tag-option" data-value="workspace" onclick="toggleTag(this)">Workspace</span>
+                            <span class="tag-option" data-value="workflow" onclick="toggleTag(this)">Workflow</span>
+                            <span class="tag-option" data-value="communication" onclick="toggleTag(this)">Communication</span>
+                            <span class="tag-option" data-value="accessibility" onclick="toggleTag(this)">Accessibility</span>
+                            <span class="tag-option" data-value="sustainability" onclick="toggleTag(this)">Sustainability</span>
+                            <span class="tag-option" data-value="safety" onclick="toggleTag(this)">Safety</span>
+                            <span class="tag-option" data-value="technology" onclick="toggleTag(this)">Technology</span>
+                            <span class="tag-option" data-value="community" onclick="toggleTag(this)">Community</span>
+                            <span class="tag-option" data-value="other" onclick="toggleTag(this)">Other</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Design discipline <span class="optional">(select any that might fit)</span></label>
+                        <div class="tag-input-group" id="disciplineTags">
+                            <span class="tag-option" data-value="product-design" onclick="toggleTag(this)">Product Design</span>
+                            <span class="tag-option" data-value="graphic-design" onclick="toggleTag(this)">Graphic Design</span>
+                            <span class="tag-option" data-value="ux-design" onclick="toggleTag(this)">UX / Digital</span>
+                            <span class="tag-option" data-value="spatial-design" onclick="toggleTag(this)">Spatial / Interior</span>
+                            <span class="tag-option" data-value="service-design" onclick="toggleTag(this)">Service Design</span>
+                            <span class="tag-option" data-value="not-sure" onclick="toggleTag(this)">Not sure!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: About You -->
+            <div class="wizard-step" data-step="3">
+                <div class="wizard-header">
+                    <h2>About You</h2>
+                    <p>Let us know who you are so students can follow up if they pick your problem.</p>
+                </div>
+                <div class="wizard-body">
+                    <div class="form-group">
+                        <label>Your Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="submitterName" placeholder="Your full name">
+                        <div class="error-message">Please enter your name</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Your Role <span class="optional">(optional)</span></label>
+                        <input type="text" class="form-input" id="submitterRole" placeholder='e.g., "Science Teacher", "Parent", "Local business owner"'>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email or Phone <span class="required">*</span></label>
+                        <div class="helper">Students may reach out with questions &mdash; how should they contact you?</div>
+                        <input type="text" class="form-input" id="submitterContact" placeholder="your.email@example.com or phone number">
+                        <div class="error-message">Please provide a way to contact you</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Are you willing to be a "client" for a student team?</label>
+                        <div class="helper">This means being available for interviews, feedback on prototypes, maybe a site visit</div>
+                        <div class="willingness-options" id="willingnessOptions">
+                            <div class="willingness-option" data-value="full" onclick="selectWillingness(this)">
+                                <span class="w-icon">&#x1f91d;</span>
+                                <div class="w-text">
+                                    <div class="w-title">All in!</div>
+                                    <div class="w-desc">Happy to do interviews, review prototypes, provide access to the problem space</div>
+                                </div>
+                            </div>
+                            <div class="willingness-option" data-value="some" onclick="selectWillingness(this)">
+                                <span class="w-icon">&#x1f4ac;</span>
+                                <div class="w-text">
+                                    <div class="w-title">Available for questions</div>
+                                    <div class="w-desc">Can answer emails or do a short interview, but limited time</div>
+                                </div>
+                            </div>
+                            <div class="willingness-option" data-value="minimal" onclick="selectWillingness(this)">
+                                <span class="w-icon">&#x1f4e7;</span>
+                                <div class="w-text">
+                                    <div class="w-title">Email only</div>
+                                    <div class="w-desc">Prefer to just answer a few questions by email</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Can you offer any resources? <span class="optional">(optional)</span></label>
+                        <div class="helper">Materials, expertise, workspace access, mentorship, etc.</div>
+                        <textarea class="form-textarea" id="submitterResources" placeholder='e.g., "I can give students access to the workshop" or "I have industry contacts in manufacturing"' rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUCCESS SCREEN (shown after submit) -->
+            <div class="wizard-step" data-step="success" style="display:none">
+                <div class="success-screen">
+                    <div class="success-icon">&#x1f389;</div>
+                    <h2>Problem Submitted!</h2>
+                    <p>Thank you for contributing to our design problem bank. A student team may reach out to learn more.</p>
+                    <button class="btn btn-primary" onclick="closeWizardAndScroll()">
+                        &#x1f440; See it in the Gallery
+                    </button>
+                </div>
+            </div>
+
+            <!-- WIZARD FOOTER -->
+            <div class="wizard-footer" id="wizardFooter">
+                <button class="btn btn-ghost" id="wizardBack" onclick="wizardPrev()" style="visibility:hidden">
+                    &#x2190; Back
+                </button>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <button class="btn btn-ghost" onclick="closeWizard()">Cancel</button>
+                    <button class="btn btn-primary" id="wizardNext" onclick="wizardNext()">
+                        Next &#x2192;
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal" id="detailContent">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+
+    <script>
+    // =========================================================
+    // FIREBASE CONFIG
+    // =========================================================
+    // Replace this with your Firebase project config.
+    // See SETUP.md for instructions.
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyDqQ3rbjWSaROg4oxXRtqcWXcA8XZcict0",
+        authDomain: "dawson-problem-bank-24a9c.firebaseapp.com",
+        projectId: "dawson-problem-bank-24a9c",
+        storageBucket: "dawson-problem-bank-24a9c.firebasestorage.app",
+        messagingSenderId: "376204026497",
+        appId: "1:376204026497:web:de7a281c56ef3a60f46380"
+    };
+
+    // =========================================================
+    // CLOUDINARY CONFIG
+    // =========================================================
+    const CLOUDINARY_CLOUD_NAME = 'dexhdf03b';
+    const CLOUDINARY_UPLOAD_PRESET = 'problem-bank';
+
+    async function uploadToCloudinary(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (!data.secure_url) throw new Error(data.error?.message || 'Upload failed');
+        return data.secure_url;
+    }
+
+    let db = null;
+    let useFirebase = false;
+
+    // Try to initialize Firebase
+    if (FIREBASE_CONFIG.apiKey) {
+        try {
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+            useFirebase = true;
+            document.getElementById('configBanner').style.display = 'none';
+        } catch(e) {
+            console.warn('Firebase init failed, using local storage:', e);
+        }
+    }
+
+    // =========================================================
+    // TODO: STUDENT ADMIN PAGE (Future Build)
+    // =========================================================
+    // - Student login/access code system
+    // - Students can browse available problems and claim one for their team
+    // - Status updates flow back to this public page (new → claimed → in progress → solved)
+    // - "Claimed by" team name shown on public cards
+    // - Internal notes visible only to the class (separate from public comments)
+    // - When status changes: card tags update, header counters update, filters work
+    // - Consider: notification to submitter when their problem gets claimed
+
+    // =========================================================
+    // LOCAL STORAGE FALLBACK (Demo Mode)
+    // =========================================================
+    const LOCAL_KEY = 'problemBank_problems';
+
+    function getLocalProblems() {
+        try {
+            return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        } catch { return []; }
+    }
+
+    function saveLocalProblems(problems) {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(problems));
+    }
+
+    // =========================================================
+    // STATE
+    // =========================================================
+    let allProblems = [];
+    let currentStep = 1;
+    let selectedPhotos = [];
+    let selectedSeverity = 0;
+    let selectedWillingness = '';
+    let currentFilter = 'all';
+    let lastSubmittedId = null;
+
+    // =========================================================
+    // DATA LOADING
+    // =========================================================
+    async function loadProblems() {
+        if (useFirebase) {
+            try {
+                const snapshot = await db.collection('problems').orderBy('createdAt', 'desc').get();
+                allProblems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch(e) {
+                console.error('Firebase load error:', e);
+                allProblems = getLocalProblems();
+            }
+        } else {
+            allProblems = getLocalProblems();
+        }
+        renderGallery();
+        updateStats();
+    }
+
+    // =========================================================
+    // RENDERING
+    // =========================================================
+    const SEVERITY_EMOJIS = ['', '&#x1f600;', '&#x1f615;', '&#x1f61f;', '&#x1f62b;', '&#x1f631;'];
+    const SEVERITY_LABELS = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical'];
+    const STATUS_NAMES = { 'new': 'NEW', 'claimed': 'CLAIMED', 'inprogress': 'IN PROGRESS', 'solved': 'SOLVED' };
+
+    function renderGallery() {
+        const grid = document.getElementById('galleryGrid');
+        let problems = filterAndSort();
+
+        if (problems.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x1f4ad;</div>
+                    <h3>No problems yet</h3>
+                    <p>Be the first to submit a real-world problem for our design students to solve!</p>
+                    <button class="btn btn-primary" onclick="openWizard()">&#x2795; Submit a Problem</button>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = problems.map(p => `
+            <div class="problem-card ${p.id === lastSubmittedId ? 'highlight' : ''}" onclick="openDetail('${p.id}')">
+                <div class="card-image">
+                    ${p.photos && p.photos.length > 0
+                        ? `<img src="${p.photos[0]}" alt="${escapeHtml(p.title)}" loading="lazy">`
+                        : `<span class="placeholder-icon">&#x1f4a1;</span>`
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="card-tags">
+                        <span class="tag tag-status-${p.status || 'new'}">${STATUS_NAMES[p.status || 'new'] || 'NEW'}</span>
+                        ${p.severity ? `<span class="tag-severity">${SEVERITY_EMOJIS[p.severity]} ${SEVERITY_LABELS[p.severity]}</span>` : ''}
+                        ${p.claimedByTeam ? `<span class="tag tag-team">&#x1f465; ${escapeHtml(p.claimedByTeam)}</span>` : ''}
+                        ${(p.categories || []).slice(0, 2).map(c =>
+                            `<span class="tag tag-category">${escapeHtml(c)}</span>`
+                        ).join('')}
+                        ${(p.disciplines || []).slice(0, 1).map(d =>
+                            `<span class="tag tag-discipline">${escapeHtml(d)}</span>`
+                        ).join('')}
+                    </div>
+                    <div class="card-title">${escapeHtml(p.title)}</div>
+                    <div class="card-description">${escapeHtml(p.description)}</div>
+                    <div class="card-meta">
+                        <span class="card-submitter">by ${escapeHtml(p.submitterName || 'Anonymous')}</span>
+                        <div class="card-actions">
+                            <button class="card-action ${(p.upvotedByMe ? 'upvoted' : '')}" onclick="event.stopPropagation(); toggleUpvote('${p.id}')">
+                                &#x25B2; ${p.upvotes || 0}
+                            </button>
+                            <button class="card-action" onclick="event.stopPropagation(); openQuickComment(event, '${p.id}')">
+                                &#x1f4ac; ${(p.comments || []).length}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function filterAndSort() {
+        let problems = [...allProblems];
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const sort = document.getElementById('sortSelect').value;
+
+        // Status filter
+        if (currentFilter !== 'all') {
+            problems = problems.filter(p => (p.status || 'new') === currentFilter);
+        }
+
+        // Search filter
+        if (search) {
+            problems = problems.filter(p =>
+                p.title.toLowerCase().includes(search) ||
+                p.description.toLowerCase().includes(search) ||
+                (p.affects || '').toLowerCase().includes(search) ||
+                (p.submitterName || '').toLowerCase().includes(search)
+            );
+        }
+
+        // Sort
+        switch(sort) {
+            case 'newest': problems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); break;
+            case 'oldest': problems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); break;
+            case 'upvotes': problems.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)); break;
+            case 'severity': problems.sort((a, b) => (b.severity || 0) - (a.severity || 0)); break;
+        }
+
+        return problems;
+    }
+
+    function updateStats() {
+        document.querySelector('#stat-problems .stat-num').textContent = allProblems.length;
+        document.querySelector('#stat-available .stat-num').textContent =
+            allProblems.filter(p => (p.status || 'new') === 'new').length;
+        document.querySelector('#stat-solved .stat-num').textContent =
+            allProblems.filter(p => p.status === 'solved').length;
+    }
+
+    // =========================================================
+    // FILTER & SEARCH
+    // =========================================================
+    function setFilter(chip, filter) {
+        document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilter = filter;
+        renderGallery();
+    }
+
+    function filterProblems() {
+        renderGallery();
+    }
+
+    // =========================================================
+    // WIZARD
+    // =========================================================
+    function openWizard() {
+        currentStep = 1;
+        selectedPhotos = [];
+        selectedSeverity = 0;
+        selectedWillingness = '';
+        lastSubmittedId = null;
+
+        // Reset all form fields
+        document.querySelectorAll('#wizardContent input, #wizardContent textarea, #wizardContent select').forEach(el => {
+            el.value = '';
+            el.classList.remove('error');
+        });
+        document.querySelectorAll('.tag-option').forEach(t => t.classList.remove('selected'));
+        document.querySelectorAll('.severity-option').forEach(s => s.classList.remove('selected'));
+        document.querySelectorAll('.willingness-option').forEach(w => w.classList.remove('selected'));
+        document.getElementById('photoPreviews').innerHTML = '';
+
+        // Reset success screen so it doesn't bleed into step 1
+        const successStep = document.querySelector('.wizard-step[data-step="success"]');
+        successStep.style.display = 'none';
+        successStep.classList.remove('active');
+
+        // Show footer again
+        document.getElementById('wizardFooter').style.display = 'flex';
+
+        updateWizardUI();
+        document.getElementById('wizardModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeWizard() {
+        document.getElementById('wizardModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function closeWizardAndScroll() {
+        closeWizard();
+        setTimeout(() => {
+            const card = document.querySelector('.problem-card.highlight');
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+    }
+
+    function updateWizardUI() {
+        // Steps
+        document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+        const activeStep = document.querySelector(`.wizard-step[data-step="${currentStep}"]`);
+        if (activeStep) activeStep.classList.add('active');
+
+        // Progress indicators
+        document.querySelectorAll('.wizard-step-indicator').forEach(ind => {
+            const step = parseInt(ind.dataset.step);
+            ind.classList.remove('active', 'completed');
+            if (step === currentStep) ind.classList.add('active');
+            else if (step < currentStep) ind.classList.add('completed');
+        });
+
+        document.querySelectorAll('.step-connector').forEach((c, i) => {
+            c.classList.toggle('completed', i + 1 < currentStep);
+        });
+
+        // Navigation buttons
+        document.getElementById('wizardBack').style.visibility = currentStep > 1 ? 'visible' : 'hidden';
+        const nextBtn = document.getElementById('wizardNext');
+        if (currentStep === 3) {
+            nextBtn.innerHTML = '&#x2705; Submit';
+        } else {
+            nextBtn.innerHTML = 'Next &#x2192;';
+        }
+
+        // Hide footer on success
+        document.getElementById('wizardFooter').style.display =
+            currentStep === 'success' ? 'none' : 'flex';
+    }
+
+    function wizardNext() {
+        if (!validateStep(currentStep)) return;
+
+        if (currentStep === 3) {
+            submitProblem();
+            return;
+        }
+
+        currentStep++;
+        updateWizardUI();
+    }
+
+    function wizardPrev() {
+        if (currentStep > 1) {
+            currentStep--;
+            updateWizardUI();
+        }
+    }
+
+    function validateStep(step) {
+        let valid = true;
+
+        if (step === 1) {
+            const fields = [
+                { id: 'problemTitle', msg: 'Please enter a title' },
+                { id: 'problemDescription', msg: 'Please describe the problem' },
+                { id: 'problemAffects', msg: 'Please describe who is affected' },
+            ];
+            fields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (!el.value.trim()) {
+                    el.classList.add('error');
+                    valid = false;
+                } else {
+                    el.classList.remove('error');
+                }
+            });
+        }
+
+        if (step === 3) {
+            const fields = [
+                { id: 'submitterName' },
+                { id: 'submitterContact' },
+            ];
+            fields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (!el.value.trim()) {
+                    el.classList.add('error');
+                    valid = false;
+                } else {
+                    el.classList.remove('error');
+                }
+            });
+        }
+
+        if (!valid) {
+            showToast('Please fill in the required fields');
+        }
+
+        return valid;
+    }
+
+    // =========================================================
+    // SUBMIT
+    // =========================================================
+    async function submitProblem() {
+        const submitBtn = document.getElementById('wizardNext');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;"></span> Submitting...';
+
+        const problem = {
+            title: document.getElementById('problemTitle').value.trim(),
+            description: document.getElementById('problemDescription').value.trim(),
+            affects: document.getElementById('problemAffects').value.trim(),
+            severity: selectedSeverity,
+            where: document.getElementById('problemWhere').value.trim(),
+            frequency: document.getElementById('problemFrequency').value,
+            duration: document.getElementById('problemDuration').value.trim(),
+            workaround: document.getElementById('problemWorkaround').value.trim(),
+            priorAttempts: document.getElementById('problemPriorAttempts').value.trim(),
+            constraints: document.getElementById('problemConstraints').value.trim(),
+            categories: getSelectedTags('categoryTags'),
+            disciplines: getSelectedTags('disciplineTags'),
+            submitterName: document.getElementById('submitterName').value.trim(),
+            submitterRole: document.getElementById('submitterRole').value.trim(),
+            submitterContact: document.getElementById('submitterContact').value.trim(),
+            willingness: selectedWillingness,
+            resources: document.getElementById('submitterResources').value.trim(),
+            photos: [],
+            status: 'new',
+            upvotes: 0,
+            upvotedByMe: false,
+            comments: [],
+            createdAt: Date.now(),
+        };
+
+        // Handle photo uploads
+        if (selectedPhotos.length > 0) {
+            try {
+                for (const photo of selectedPhotos) {
+                    const url = await uploadToCloudinary(photo.file);
+                    problem.photos.push(url);
+                }
+            } catch(e) {
+                console.error('Photo upload error:', e);
+                // Fall back to data URLs if Cloudinary fails
+                problem.photos = selectedPhotos.map(p => p.dataUrl);
+            }
+        }
+
+        // Save
+        let newId;
+        if (useFirebase) {
+            try {
+                const docRef = await db.collection('problems').add(problem);
+                newId = docRef.id;
+            } catch(e) {
+                console.error('Firebase save error:', e);
+                newId = 'local_' + Date.now();
+                problem.id = newId;
+                const local = getLocalProblems();
+                local.unshift(problem);
+                saveLocalProblems(local);
+            }
+        } else {
+            newId = 'local_' + Date.now();
+            problem.id = newId;
+            const local = getLocalProblems();
+            local.unshift(problem);
+            saveLocalProblems(local);
+        }
+
+        lastSubmittedId = newId;
+
+        // Show success
+        currentStep = 'success';
+        document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+        document.querySelector('.wizard-step[data-step="success"]').style.display = 'block';
+        document.querySelector('.wizard-step[data-step="success"]').classList.add('active');
+        document.getElementById('wizardFooter').style.display = 'none';
+
+        // Update progress to all complete
+        document.querySelectorAll('.wizard-step-indicator').forEach(ind => {
+            ind.classList.remove('active');
+            ind.classList.add('completed');
+        });
+        document.querySelectorAll('.step-connector').forEach(c => c.classList.add('completed'));
+
+        submitBtn.disabled = false;
+
+        // Reload gallery
+        await loadProblems();
+    }
+
+    // =========================================================
+    // PHOTO HANDLING
+    // =========================================================
+    function handlePhotoSelect(event) {
+        addPhotos(Array.from(event.target.files));
+    }
+
+    function handlePhotoDrop(event) {
+        event.preventDefault();
+        event.currentTarget.classList.remove('dragover');
+        const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        addPhotos(files);
+    }
+
+    function addPhotos(files) {
+        files.forEach(file => {
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('File too large: ' + file.name + ' (max 5MB)');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedPhotos.push({
+                    file: file,
+                    name: file.name,
+                    dataUrl: e.target.result
+                });
+                renderPhotoPreview();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderPhotoPreview() {
+        const container = document.getElementById('photoPreviews');
+        container.innerHTML = selectedPhotos.map((p, i) => `
+            <div class="photo-preview">
+                <img src="${p.dataUrl}" alt="Preview">
+                <button class="remove-photo" onclick="removePhoto(${i})">&#x2715;</button>
+            </div>
+        `).join('');
+    }
+
+    function removePhoto(index) {
+        selectedPhotos.splice(index, 1);
+        renderPhotoPreview();
+    }
+
+    // =========================================================
+    // FORM HELPERS
+    // =========================================================
+    function selectSeverity(el) {
+        document.querySelectorAll('.severity-option').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedSeverity = parseInt(el.dataset.severity);
+    }
+
+    function selectWillingness(el) {
+        document.querySelectorAll('.willingness-option').forEach(w => w.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedWillingness = el.dataset.value;
+    }
+
+    function toggleTag(el) {
+        el.classList.toggle('selected');
+    }
+
+    function getSelectedTags(containerId) {
+        return Array.from(document.querySelectorAll(`#${containerId} .tag-option.selected`))
+            .map(t => t.dataset.value);
+    }
+
+    // =========================================================
+    // UPVOTING
+    // =========================================================
+    async function toggleUpvote(id) {
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        problem.upvotedByMe = !problem.upvotedByMe;
+        problem.upvotes = (problem.upvotes || 0) + (problem.upvotedByMe ? 1 : -1);
+
+        if (useFirebase) {
+            try {
+                await db.collection('problems').doc(id).update({
+                    upvotes: problem.upvotes
+                });
+            } catch(e) {
+                console.error('Upvote error:', e);
+            }
+        } else {
+            saveLocalProblems(allProblems);
+        }
+
+        renderGallery();
+    }
+
+    // =========================================================
+    // DETAIL VIEW
+    // =========================================================
+    function openDetail(id) {
+        const problem = allProblems.find(p => p.id === id);
+        if (!problem) return;
+
+        const modal = document.getElementById('detailContent');
+        modal.innerHTML = `
+            <div class="detail-header">
+                <button class="detail-close" onclick="closeDetail()">&#x2715;</button>
+                <div class="detail-image">
+                    ${problem.photos && problem.photos.length > 0
+                        ? `<img src="${problem.photos[0]}" alt="${escapeHtml(problem.title)}">`
+                        : `<span class="placeholder-icon" style="font-size:4rem;opacity:0.3;">&#x1f4a1;</span>`
+                    }
+                </div>
+            </div>
+            <div class="detail-body">
+                <div class="card-tags" style="margin-bottom:1rem;">
+                    <span class="tag tag-status-${problem.status || 'new'}">${STATUS_NAMES[problem.status || 'new'] || 'NEW'}</span>
+                    ${problem.claimedByTeam ? `<span class="tag tag-team">&#x1f465; ${escapeHtml(problem.claimedByTeam)}</span>` : ''}
+                    ${(problem.categories || []).map(c =>
+                        `<span class="tag tag-category">${escapeHtml(c)}</span>`
+                    ).join('')}
+                    ${(problem.disciplines || []).map(d =>
+                        `<span class="tag tag-discipline">${escapeHtml(d)}</span>`
+                    ).join('')}
+                </div>
+
+                <div class="detail-title">${escapeHtml(problem.title)}</div>
+
+                ${problem.severity ? `
+                    <div class="severity-indicator" style="margin-bottom:1rem; font-size:1rem;">
+                        ${SEVERITY_EMOJIS[problem.severity]} <strong>${SEVERITY_LABELS[problem.severity]}</strong> severity
+                    </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h4>The Problem</h4>
+                    <p>${escapeHtml(problem.description)}</p>
+                </div>
+
+                <div class="detail-section">
+                    <h4>Who It Affects</h4>
+                    <p>${escapeHtml(problem.affects)}</p>
+                </div>
+
+                ${problem.where ? `<div class="detail-section"><h4>Where</h4><p>${escapeHtml(problem.where)}</p></div>` : ''}
+                ${problem.frequency ? `<div class="detail-section"><h4>Frequency</h4><p>${escapeHtml(problem.frequency)}</p></div>` : ''}
+                ${problem.duration ? `<div class="detail-section"><h4>How Long</h4><p>${escapeHtml(problem.duration)}</p></div>` : ''}
+                ${problem.workaround ? `<div class="detail-section"><h4>Current Workaround</h4><p>${escapeHtml(problem.workaround)}</p></div>` : ''}
+                ${problem.priorAttempts ? `<div class="detail-section"><h4>Prior Attempts</h4><p>${escapeHtml(problem.priorAttempts)}</p></div>` : ''}
+                ${problem.constraints ? `<div class="detail-section"><h4>Constraints</h4><p>${escapeHtml(problem.constraints)}</p></div>` : ''}
+
+                <div class="detail-section">
+                    <h4>Submitted By</h4>
+                    <p><strong>${escapeHtml(problem.submitterName)}</strong>${problem.submitterRole ? ` &mdash; ${escapeHtml(problem.submitterRole)}` : ''}</p>
+                    ${problem.willingness ? `<p style="margin-top:0.3rem;">Availability: <strong>${
+                        problem.willingness === 'full' ? 'All in — interviews, prototypes, site visits' :
+                        problem.willingness === 'some' ? 'Available for questions' :
+                        'Email only'
+                    }</strong></p>` : ''}
+                    ${problem.resources ? `<p style="margin-top:0.3rem;">Resources offered: ${escapeHtml(problem.resources)}</p>` : ''}
+                </div>
+
+                ${problem.photos && problem.photos.length > 1 ? `
+                    <div class="detail-section">
+                        <h4>Photos</h4>
+                        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+                            ${problem.photos.map(url => `
+                                <img src="${url}" alt="Problem photo" style="width:150px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open('${url}','_blank')">
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="detail-actions">
+                    <button class="btn ${problem.upvotedByMe ? 'btn-primary' : 'btn-outline'}" onclick="toggleUpvote('${problem.id}'); openDetail('${problem.id}');">
+                        &#x25B2; Upvote (${problem.upvotes || 0})
+                    </button>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h4>&#x1f4ac; Discussion (${(problem.comments || []).length})</h4>
+                    <div id="commentsList_${problem.id}">
+                        ${(problem.comments || []).map(c => `
+                            <div class="comment">
+                                <div class="comment-avatar">${(c.author || 'A')[0].toUpperCase()}</div>
+                                <div class="comment-body">
+                                    <span class="comment-author">${escapeHtml(c.author)}</span>
+                                    <span class="comment-time">${timeAgo(c.createdAt)}</span>
+                                    <div class="comment-text">${escapeHtml(c.text)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="comment-input-area">
+                        <input type="text" id="commentAuthor_${problem.id}" placeholder="Your name" style="flex:0.4;">
+                        <input type="text" id="commentText_${problem.id}" placeholder="Add a question or comment..." onkeydown="if(event.key==='Enter') addComment('${problem.id}')">
+                        <button class="btn btn-primary" onclick="addComment('${problem.id}')" style="padding:0.5rem 1rem;">Post</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('detailModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDetail() {
+        document.getElementById('detailModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // =========================================================
+    // COMMENTS
+    // =========================================================
+    async function addComment(problemId) {
+        const authorInput = document.getElementById(`commentAuthor_${problemId}`);
+        const textInput = document.getElementById(`commentText_${problemId}`);
+        const author = authorInput.value.trim();
+        const text = textInput.value.trim();
+
+        if (!author || !text) {
+            showToast('Please enter your name and comment');
+            return;
+        }
+
+        const comment = { author, text, createdAt: Date.now() };
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        if (!problem.comments) problem.comments = [];
+        problem.comments.push(comment);
+
+        if (useFirebase) {
+            try {
+                await db.collection('problems').doc(problemId).update({
+                    comments: problem.comments
+                });
+            } catch(e) {
+                console.error('Comment error:', e);
+            }
+        } else {
+            saveLocalProblems(allProblems);
+        }
+
+        textInput.value = '';
+        renderGallery(); // Update comment count on cards
+        openDetail(problemId); // Re-render detail view
+        showToast('Comment added!');
+    }
+
+    // =========================================================
+    // QUICK COMMENT POPUP
+    // =========================================================
+    function openQuickComment(event, problemId) {
+        event.stopPropagation();
+        closeQuickComment(); // Close any existing popup
+
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        const btn = event.currentTarget;
+        const rect = btn.getBoundingClientRect();
+
+        // Create overlay to catch outside clicks
+        const overlay = document.createElement('div');
+        overlay.className = 'quick-comment-overlay';
+        overlay.onclick = closeQuickComment;
+        document.body.appendChild(overlay);
+
+        // Create popup
+        const popup = document.createElement('div');
+        popup.className = 'quick-comment-popup';
+        popup.id = 'quickCommentPopup';
+        popup.dataset.problemId = problemId;
+
+        const comments = problem.comments || [];
+
+        popup.innerHTML = `
+            <div class="qc-header">
+                <span>&#x1f4ac; Comments (${comments.length})</span>
+                <button class="qc-close" onclick="closeQuickComment()">&#x2715;</button>
+            </div>
+            <div class="qc-body">
+                ${comments.length === 0 ? `
+                    <div class="qc-empty">No comments yet. Be the first!</div>
+                ` : comments.map(c => `
+                    <div class="comment">
+                        <div class="comment-avatar">${(c.author || 'A')[0].toUpperCase()}</div>
+                        <div class="comment-body">
+                            <span class="comment-author">${escapeHtml(c.author)}</span>
+                            <span class="comment-time">${timeAgo(c.createdAt)}</span>
+                            <div class="comment-text">${escapeHtml(c.text)}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="qc-input">
+                <div class="qc-input-row">
+                    <input type="text" id="qcAuthor_${problemId}" placeholder="Your name">
+                </div>
+                <div class="qc-input-row">
+                    <input type="text" id="qcText_${problemId}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter') addQuickComment('${problemId}')">
+                    <button class="btn btn-primary" onclick="addQuickComment('${problemId}')">Post</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+
+        // Position the popup near the button
+        const popupWidth = 360;
+        const popupHeight = popup.offsetHeight || 300;
+        let left = rect.left + rect.width / 2 - popupWidth / 2;
+        let top = rect.bottom + 8;
+
+        // Keep within viewport
+        if (left < 10) left = 10;
+        if (left + popupWidth > window.innerWidth - 10) left = window.innerWidth - popupWidth - 10;
+        if (top + popupHeight > window.innerHeight - 10) {
+            top = rect.top - popupHeight - 8;
+        }
+
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+
+        // Scroll to bottom of comments
+        const body = popup.querySelector('.qc-body');
+        body.scrollTop = body.scrollHeight;
+
+        // Focus the text input
+        setTimeout(() => {
+            const textInput = document.getElementById(`qcText_${problemId}`);
+            if (textInput) textInput.focus();
+        }, 100);
+    }
+
+    function closeQuickComment() {
+        const popup = document.getElementById('quickCommentPopup');
+        if (popup) popup.remove();
+        const overlay = document.querySelector('.quick-comment-overlay');
+        if (overlay) overlay.remove();
+    }
+
+    async function addQuickComment(problemId) {
+        const authorInput = document.getElementById(`qcAuthor_${problemId}`);
+        const textInput = document.getElementById(`qcText_${problemId}`);
+        const author = authorInput.value.trim();
+        const text = textInput.value.trim();
+
+        if (!author || !text) {
+            showToast('Please enter your name and comment');
+            return;
+        }
+
+        const comment = { author, text, createdAt: Date.now() };
+        const problem = allProblems.find(p => p.id === problemId);
+        if (!problem) return;
+
+        if (!problem.comments) problem.comments = [];
+        problem.comments.push(comment);
+
+        if (useFirebase) {
+            try {
+                await db.collection('problems').doc(problemId).update({
+                    comments: problem.comments
+                });
+            } catch(e) {
+                console.error('Comment error:', e);
+            }
+        } else {
+            saveLocalProblems(allProblems);
+        }
+
+        textInput.value = '';
+        renderGallery(); // Update comment count on cards
+
+        // Re-render the popup to show the new comment
+        closeQuickComment();
+        // Create a fake event to reopen at roughly the same spot
+        const card = document.querySelector(`.problem-card[onclick*="${problemId}"]`);
+        if (card) {
+            const commentBtn = card.querySelector('.card-action:last-child');
+            if (commentBtn) {
+                const fakeEvent = { stopPropagation: () => {}, currentTarget: commentBtn };
+                openQuickComment(fakeEvent, problemId);
+            }
+        }
+
+        showToast('Comment added!');
+    }
+
+    // =========================================================
+    // UTILITIES
+    // =========================================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function timeAgo(timestamp) {
+        if (!timestamp) return '';
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        if (seconds < 2592000) return Math.floor(seconds / 86400) + 'd ago';
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    function showToast(message) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Close modals on overlay click
+    document.getElementById('wizardModal').addEventListener('click', function(e) {
+        if (e.target === this) closeWizard();
+    });
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDetail();
+    });
+
+    // Escape key closes modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeWizard();
+            closeDetail();
+        }
+    });
+
+    // =========================================================
+    // INIT
+    // =========================================================
+    loadProblems();
+    </script>
+</body>
+</html>

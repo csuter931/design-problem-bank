@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh repo:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "mcp__stitch__list_projects",
+      "Skill(stitch-design)",
+      "Skill(stitch-design:*)",
+      "Bash(find C:/Users/csuter/.claude/plugins -name visual-companion*)",
+      "Bash(\"C:/Users/csuter/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh\" --project-dir \"c:/Users/csuter/Google Drive/Projects/Problem Bank Web Page\")",
+      "Bash(xargs cat:*)",
+      "Skill(schedule)",
+      "Skill(schedule:*)",
+      "Bash(git -C \"c:/Users/csuter/Google Drive/Projects/Problem Bank Web Page\" branch --show-current)",
+      "Bash(git -C \"c:/Users/csuter/Google Drive/Projects/Problem Bank Web Page\" rev-parse HEAD)"
+    ]
+  }
+}

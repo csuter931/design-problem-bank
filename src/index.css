@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    /* shadcn CSS variables — mapped to Dawson Problem Bank palette */
+    --background: 228 100% 99%;
+    --foreground: 214 56% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 214 56% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 56% 11%;
+
+    --primary: 232 57% 37%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 100% 21%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 224 46% 93%;
+    --muted-foreground: 234 13% 44%;
+
+    --accent: 174 100% 21%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 73% 41%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 12% 76%;
+    --input: 240 12% 76%;
+    --ring: 232 57% 37%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 0 0% 100%;
+
+    --card: 224 35% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 224 35% 12%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 232 57% 37%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 100% 21%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 224 30% 18%;
+    --muted-foreground: 240 10% 60%;
+
+    --accent: 174 100% 21%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 224 30% 20%;
+    --input: 224 30% 20%;
+    --ring: 232 57% 37%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border box-border;
+  }
+  body {
+    @apply bg-background text-foreground m-0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* scrollbar-hide utility for carousel components */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
