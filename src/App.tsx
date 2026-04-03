@@ -3,6 +3,61 @@ import { collection, orderBy, query, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import './index.css'
 
+// ── Sample problems (preview data) ──────────────────────
+const SAMPLE_PROBLEMS: Problem[] = [
+  {
+    id: 'sample-1',
+    title: 'Cafeteria lunch line takes too long',
+    description: 'Students wait 15–20 minutes in line every day, leaving barely 10 minutes to eat. Many skip lunch entirely.',
+    affects: 'All students and staff',
+    status: 'new', severity: 4,
+    categories: ['workspace', 'community'], disciplines: ['service-design'],
+    submitterName: 'Maria Gonzalez', createdAt: Date.now() - 86400000 * 5,
+    upvotes: 12, comments: [{}, {}],
+    photos: ['https://images.unsplash.com/photo-1567521464027-f127ff144326?w=600&auto=format&fit=crop'],
+  },
+  {
+    id: 'sample-2',
+    title: 'Bike parking is unsafe and overcrowded',
+    description: 'The existing bike racks are bent, jam-packed, and exposed to weather. Bikes fall over and locks barely fit.',
+    status: 'claimed', severity: 3,
+    categories: ['safety', 'sustainability'], disciplines: ['spatial-design'],
+    submitterName: 'James Park', claimedByTeam: 'Team Sprocket',
+    createdAt: Date.now() - 86400000 * 10, upvotes: 8, comments: [{}],
+    photos: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop'],
+  },
+  {
+    id: 'sample-3',
+    title: 'No quiet study space during free periods',
+    description: 'The library closes at 3pm and there\'s no designated quiet zone for students who need to focus during study hall.',
+    status: 'inprogress', severity: 3,
+    categories: ['workspace'], disciplines: ['spatial-design', 'ux-design'],
+    submitterName: 'Dr. Sarah Lin', claimedByTeam: 'Studio Six',
+    createdAt: Date.now() - 86400000 * 15, upvotes: 21, comments: [{}, {}],
+    photos: ['https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&auto=format&fit=crop'],
+  },
+  {
+    id: 'sample-4',
+    title: 'Bathroom soap dispensers always empty',
+    description: 'Soap dispensers in the main building bathrooms are refilled maybe once a week. Students wash hands without soap.',
+    status: 'new', severity: 5,
+    categories: ['safety'], disciplines: ['service-design', 'product-design'],
+    submitterName: 'Tom Richards',
+    createdAt: Date.now() - 86400000 * 2, upvotes: 5, comments: [],
+    photos: ['https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&auto=format&fit=crop'],
+  },
+  {
+    id: 'sample-5',
+    title: 'Recycling bins are confusing to use',
+    description: 'Labels on recycling, compost, and landfill bins are unclear — most recyclables end up in landfill because no one knows what goes where.',
+    status: 'solved', severity: 2,
+    categories: ['sustainability', 'communication'], disciplines: ['graphic-design'],
+    submitterName: 'Eco Club',
+    createdAt: Date.now() - 86400000 * 30, upvotes: 16, comments: [{}],
+    photos: ['https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=600&auto=format&fit=crop'],
+  },
+]
+
 // ── Types ────────────────────────────────────────────────
 interface Problem {
   id: string
@@ -116,7 +171,8 @@ function App() {
   useEffect(() => {
     const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(q, (snap) => {
-      setProblems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Problem)))
+      const firestoreProblems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Problem))
+      setProblems([...SAMPLE_PROBLEMS, ...firestoreProblems])
       setLoading(false)
     }, () => setLoading(false))
     return unsub
