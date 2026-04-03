@@ -207,31 +207,34 @@ function App() {
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
 
-      {/* ── HEADER ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-[rgba(18,22,40,0.92)] backdrop-blur-md border-b border-white/[0.08]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* ── HERO (contains brand + stats + CTA) ────────────── */}
+      <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">
+        <div className="pointer-events-none absolute -top-[20%] -left-[15%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(43,56,150,0.45)_0%,transparent_70%)]" />
+        <div className="pointer-events-none absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,106,96,0.35)_0%,transparent_70%)]" />
+
+        {/* Top nav row */}
+        <div className="relative z-10 max-w-5xl mx-auto flex items-center justify-between mb-14">
           <div className="flex items-center gap-3">
             <span className="text-3xl">💡</span>
             <div>
-              <h1 className="font-bold text-xl tracking-tight text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h1 className="font-bold text-lg tracking-tight text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Design Problem Bank
               </h1>
-              <p className="text-xs text-white/50">Real problems. Creative solutions.</p>
+              <p className="text-xs text-white/40 mt-0.5">Real problems. Creative solutions.</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-white/50">
+          <div className="flex items-center gap-5 text-sm text-white/45">
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
             <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
             <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
+            <a href="/design-problem-bank/admin.html" className="px-4 py-1.5 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors text-xs">
+              🎓 Student Login
+            </a>
           </div>
         </div>
-      </header>
 
-      {/* ── HERO ───────────────────────────────────────────── */}
-      <section className="relative bg-[#0b0f1a] text-white py-24 px-6 text-center overflow-hidden">
-        <div className="pointer-events-none absolute -top-[20%] -left-[15%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(43,56,150,0.45)_0%,transparent_70%)]" />
-        <div className="pointer-events-none absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,106,96,0.35)_0%,transparent_70%)]" />
-        <div className="relative z-10 max-w-2xl mx-auto">
+        {/* Hero copy */}
+        <div className="relative z-10 max-w-2xl mx-auto text-center">
           <h2 className="text-5xl font-extrabold tracking-tight leading-[1.15] mb-5" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Got a problem that needs solving?
           </h2>
