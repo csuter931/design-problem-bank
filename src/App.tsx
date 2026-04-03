@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { collection, orderBy, query, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { SubmitWizard } from '@/components/SubmitWizard'
 import './index.css'
 
 // ── Sample problems (preview data) ──────────────────────
@@ -166,6 +167,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -193,6 +195,7 @@ function App() {
     .sort((a, b) => {
       if (sort === 'upvotes') return (b.upvotes || 0) - (a.upvotes || 0)
       if (sort === 'severity') return (b.severity || 0) - (a.severity || 0)
+      if (sort === 'oldest') return (a.createdAt || 0) - (b.createdAt || 0)
       return (b.createdAt || 0) - (a.createdAt || 0)
     })
 
@@ -203,6 +206,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
 
       {/* ── HEADER ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-[rgba(18,22,40,0.92)] backdrop-blur-md border-b border-white/[0.08]">
@@ -239,7 +243,7 @@ function App() {
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <div className="bg-white/[0.12] rounded-[14px] p-[3px]">
-              <button className="text-base px-7 py-[0.7rem] rounded-[11px] bg-primary text-white hover:bg-primary/90 transition-colors font-medium">
+              <button onClick={() => setWizardOpen(true)} className="text-base px-7 py-[0.7rem] rounded-[11px] bg-primary text-white hover:bg-primary/90 transition-colors font-medium">
                 📝 Submit a Problem
               </button>
             </div>
@@ -286,11 +290,12 @@ function App() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
-            className="px-3 py-[0.5rem] rounded-[11px] bg-white/[0.07] border border-white/[0.15] text-white/75 text-sm cursor-pointer"
+            className="px-3 py-[0.5rem] rounded-[11px] bg-[#141824] border border-white/[0.15] text-white/75 text-sm cursor-pointer"
           >
-            <option value="newest">Newest first</option>
-            <option value="upvotes">Most upvoted</option>
-            <option value="severity">Highest severity</option>
+            <option value="newest" className="bg-[#141824]">Newest first</option>
+            <option value="oldest" className="bg-[#141824]">Oldest first</option>
+            <option value="upvotes" className="bg-[#141824]">Most upvoted</option>
+            <option value="severity" className="bg-[#141824]">Highest severity</option>
           </select>
         </div>
 
