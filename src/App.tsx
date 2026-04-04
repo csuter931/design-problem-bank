@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { collection, orderBy, query, onSnapshot } from 'firebase/firestore'
+import { collection, orderBy, query, onSnapshot, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { SubmitWizard } from '@/components/SubmitWizard'
+import { StudentPortal, type StudentSession } from '@/components/StudentPortal'
 
 // ── Sample problems (preview data) ──────────────────────
 const SAMPLE_PROBLEMS: Problem[] = [
@@ -102,9 +103,10 @@ const FILTERS = [
 ]
 
 // ── ProblemCard ──────────────────────────────────────────
-function ProblemCard({ problem }: { problem: Problem }) {
+function ProblemCard({ problem, session, onClaim }: { problem: Problem; session: StudentSession | null; onClaim?: (id: string) => void }) {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
+  const canClaim = session?.team && status === 'new' && !problem.id.startsWith('sample-')
 
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 flex flex-col">
@@ -144,6 +146,14 @@ function ProblemCard({ problem }: { problem: Problem }) {
             <span>💬 {(problem.comments || []).length}</span>
           </div>
         </div>
+        {canClaim && (
+          <button
+            onClick={() => onClaim?.(problem.id)}
+            className="mt-3 w-full py-2 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
+          >
+            🙋 Claim this Problem
+          </button>
+        )}
       </div>
     </div>
   )
@@ -158,6 +168,8 @@ function App() {
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [portalOpen, setPortalOpen] = useState(false)
+  const [session, setSession] = useState<StudentSession | null>(null)
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -169,6 +181,14 @@ function App() {
     }, () => setLoading(false))
     return unsub
   }, [])
+
+  async function claimProblem(id: string) {
+    if (!session?.team) return
+    await updateDoc(doc(db, 'problems', id), {
+      status: 'claimed',
+      claimedByTeam: session.team.name,
+    })
+  }
 
   // Filter + search + sort
   const visible = problems
@@ -193,6 +213,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
+      {portalOpen && <StudentPortal onClose={() => setPortalOpen(false)} onSessionChange={setSession} />}
 
       {/* ── HERO (contains brand + stats + CTA) ────────────── */}
       <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">
@@ -214,9 +235,12 @@ function App() {
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
             <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
             <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
-            <a href="/design-problem-bank/admin.html" className="px-4 py-1.5 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors text-xs">
-              🎓 Student Login
-            </a>
+            <button
+              onClick={() => setPortalOpen(true)}
+              className="px-4 py-1.5 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors text-xs"
+            >
+              {session?.team ? `👥 ${session.team.name}` : '🎓 Student Login'}
+            </button>
           </div>
         </div>
 
@@ -296,7 +320,7 @@ function App() {
             <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {visible.map(p => <ProblemCard key={p.id} problem={p} />)}
+              {visible.map(p => <ProblemCard key={p.id} problem={p} session={session} onClaim={claimProblem} />)}
             </div>
           )}
         </div>

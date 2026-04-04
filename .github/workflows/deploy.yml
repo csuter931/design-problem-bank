@@ -35,6 +35,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Keep admin.html accessible at /design-problem-bank/admin.html
+      - name: Copy admin.html into build output
+        run: cp admin.html dist/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
