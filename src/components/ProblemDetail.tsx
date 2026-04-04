@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { hasVoted, recordVote } from '@/lib/votes'
-import type { StudentSession } from './StudentPortal'
 
 export interface Problem {
   id: string
@@ -53,12 +52,10 @@ const FREQUENCY_LABELS: Record<string, string> = {
 
 interface Props {
   problem: Problem
-  session: StudentSession | null
   onClose: () => void
-  onClaim: (id: string) => void
 }
 
-export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
+export function ProblemDetail({ problem, onClose }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
@@ -73,7 +70,6 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
 
   const status = problem.status || 'new'
   const isSample = problem.id.startsWith('sample-')
-  const canClaim = session?.team && status === 'new' && !isSample
 
   async function handleUpvote() {
     if (voted || isSample) return
@@ -90,10 +86,8 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
   }
 
   async function handleComment() {
-    const author = session?.user
-      ? (session.user.displayName || session.user.email || 'Student')
-      : anonName.trim()
-    if (!commentText.trim() || (!session?.user && !anonName.trim()) || isSample) return
+    if (!commentText.trim() || !anonName.trim() || isSample) return
+    const author = anonName.trim()
     setSubmittingComment(true)
     const c: Comment = { text: commentText.trim(), author, createdAt: Date.now() }
     await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
@@ -219,14 +213,6 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
               >
                 ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
               </button>
-              {canClaim && (
-                <button
-                  onClick={() => { onClaim(problem.id); onClose() }}
-                  className="flex-1 py-2 rounded-xl bg-primary/20 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
-                >
-                  🙋 Claim this Problem
-                </button>
-              )}
             </div>
 
             {/* Comments */}
@@ -247,14 +233,12 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
               </div>
               {!isSample && (
                 <div className="flex flex-col gap-2">
-                  {!session?.user && (
-                    <input
-                      value={anonName}
-                      onChange={e => setAnonName(e.target.value)}
-                      placeholder="Your name (required)"
-                      className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-                    />
-                  )}
+                  <input
+                    value={anonName}
+                    onChange={e => setAnonName(e.target.value)}
+                    placeholder="Your name *"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                  />
                   <div className="flex gap-2">
                     <input
                       value={commentText}
@@ -265,12 +249,15 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
                     />
                     <button
                       onClick={handleComment}
-                      disabled={submittingComment || !commentText.trim() || (!session?.user && !anonName.trim())}
+                      disabled={submittingComment || !commentText.trim() || !anonName.trim()}
                       className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
                     >
-                      Post
+                      {submittingComment ? 'Posting…' : 'Post'}
                     </button>
                   </div>
+                  {!anonName.trim() && commentText.trim() && (
+                    <p className="text-amber-400/80 text-xs">Enter your name above to post.</p>
+                  )}
                 </div>
               )}
             </div>

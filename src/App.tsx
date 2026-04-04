@@ -312,9 +312,7 @@ function App() {
           <ProblemDetail
             key={selectedProblem.id}
             problem={selectedProblem}
-            session={null}
             onClose={() => setSelectedProblem(null)}
-            onClaim={() => {}}
           />
         )}
       </AnimatePresence>
