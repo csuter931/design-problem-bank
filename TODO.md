@@ -1,6 +1,10 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-03-30
+Last updated: 2026-04-03
+
+## Bugs to Fix (React app)
+- [ ] **Upvote UX is confusing** — blue vs grey state unclear to users; verify count updates correctly after voting and consider improving visual feedback / copy.
+- [ ] **Student dashboard tab counts wrong** — e.g. "Available: 1, Solved: 7" doesn't add up. Check filter logic for how sample problems + Firestore problems are bucketed into Available / My Team's / Solved / All tabs.
 
 ## Bugs / Things to Test
 - [x] Super user edit form — full scrollable form implemented (2026-03-30); all fields editable, delete/save/cancel footer
