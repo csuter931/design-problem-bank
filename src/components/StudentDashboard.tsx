@@ -61,12 +61,18 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { setUser(null); setTeam(null); setAuthView('signin'); return }
       setUser(u)
-      const snap = await getDoc(doc(db, 'teams', u.uid))
-      if (snap.exists()) {
-        setTeam(snap.data() as Team)
-        setAuthView('dashboard')
-      } else {
-        await loadExistingTeams()
+      try {
+        const snap = await getDoc(doc(db, 'teams', u.uid))
+        if (snap.exists()) {
+          setTeam(snap.data() as Team)
+          setAuthView('dashboard')
+        } else {
+          try { await loadExistingTeams() } catch { /* non-fatal */ }
+          setAuthView('team-setup')
+        }
+      } catch (e) {
+        console.error('Failed to load team:', e)
+        // Can't read Firestore — still let them in, just without a team
         setAuthView('team-setup')
       }
     })
