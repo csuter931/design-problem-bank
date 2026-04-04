@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { collection, orderBy, query, onSnapshot, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { StudentPortal, type StudentSession } from '@/components/StudentPortal'
+import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 
 // ── Sample problems (preview data) ──────────────────────
 const SAMPLE_PROBLEMS: Problem[] = [
@@ -59,38 +61,15 @@ const SAMPLE_PROBLEMS: Problem[] = [
   },
 ]
 
-// ── Types ────────────────────────────────────────────────
-interface Problem {
-  id: string
-  title: string
-  description: string
-  status?: 'new' | 'claimed' | 'inprogress' | 'solved'
-  severity?: number
-  categories?: string[]
-  disciplines?: string[]
-  submitterName?: string
-  claimedByTeam?: string
-  upvotes?: number
-  comments?: unknown[]
-  photos?: string[]
-  createdAt?: number
-  affects?: string
-}
-
 const STATUS_LABELS: Record<string, string> = {
-  new: 'NEW',
-  claimed: 'CLAIMED',
-  inprogress: 'IN PROGRESS',
-  solved: 'SOLVED',
+  new: 'NEW', claimed: 'CLAIMED', inprogress: 'IN PROGRESS', solved: 'SOLVED',
 }
-
 const STATUS_COLORS: Record<string, string> = {
   new:        'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   claimed:    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
   inprogress: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   solved:     'bg-purple-500/20 text-purple-300 border-purple-500/30',
 }
-
 const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
 const SEVERITY_LABEL = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical']
 
@@ -103,13 +82,18 @@ const FILTERS = [
 ]
 
 // ── ProblemCard ──────────────────────────────────────────
-function ProblemCard({ problem, session, onClaim }: { problem: Problem; session: StudentSession | null; onClaim?: (id: string) => void }) {
+function ProblemCard({ problem, session, onSelect, onClaim }: { problem: Problem; session: StudentSession | null; onSelect: (p: Problem) => void; onClaim?: (id: string) => void }) {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
   const canClaim = session?.team && status === 'new' && !problem.id.startsWith('sample-')
 
   return (
-    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 flex flex-col">
+    <motion.div
+      layoutId={`problem-card-${problem.id}`}
+      onClick={() => onSelect(problem)}
+      className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-colors duration-300 flex flex-col"
+      transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+    >
       <div className="h-[160px] bg-white/[0.04] flex items-center justify-center overflow-hidden flex-shrink-0">
         {problem.photos?.[0] ? (
           <img src={problem.photos[0]} alt={problem.title} className="w-full h-full object-cover" />
@@ -148,14 +132,14 @@ function ProblemCard({ problem, session, onClaim }: { problem: Problem; session:
         </div>
         {canClaim && (
           <button
-            onClick={() => onClaim?.(problem.id)}
+            onClick={e => { e.stopPropagation(); onClaim?.(problem.id) }}
             className="mt-3 w-full py-2 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
           >
             🙋 Claim this Problem
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -175,6 +159,7 @@ function App() {
     return !!flag
   })
   const [session, setSession] = useState<StudentSession | null>(null)
+  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -219,6 +204,17 @@ function App() {
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
       {portalOpen && <StudentPortal onClose={() => setPortalOpen(false)} onSessionChange={setSession} />}
+      <AnimatePresence>
+        {selectedProblem && (
+          <ProblemDetail
+            key={selectedProblem.id}
+            problem={selectedProblem}
+            session={session}
+            onClose={() => setSelectedProblem(null)}
+            onClaim={claimProblem}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── HERO (contains brand + stats + CTA) ────────────── */}
       <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">
@@ -325,7 +321,7 @@ function App() {
             <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {visible.map(p => <ProblemCard key={p.id} problem={p} session={session} onClaim={claimProblem} />)}
+              {visible.map(p => <ProblemCard key={p.id} problem={p} session={session} onSelect={setSelectedProblem} onClaim={claimProblem} />)}
             </div>
           )}
         </div>
