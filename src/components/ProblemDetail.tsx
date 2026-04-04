@@ -16,7 +16,7 @@ export interface Problem {
   submitterRole?: string
   claimedByTeam?: string
   upvotes?: number
-  comments?: Comment[]
+  comments?: unknown[]
   photos?: string[]
   createdAt?: number
   affects?: string
@@ -62,7 +62,11 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(false)
   const [commentText, setCommentText] = useState('')
-  const [comments, setComments] = useState<Comment[]>((problem.comments || []) as Comment[])
+  const [comments, setComments] = useState<Comment[]>(
+    ((problem.comments || []) as unknown[]).filter((c): c is Comment =>
+      typeof c === 'object' && c !== null && 'text' in c
+    )
+  )
   const [submittingComment, setSubmittingComment] = useState(false)
 
   const status = problem.status || 'new'
