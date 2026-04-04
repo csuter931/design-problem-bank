@@ -16,7 +16,9 @@
       "Bash(git -C \"c:/Users/csuter/Google Drive/Projects/Problem Bank Web Page\" rev-parse HEAD)",
       "Bash(node -e \":*)",
       "Bash(python3 -:*)",
-      "Bash(npx tailwindcss:*)"
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm --version)",
+      "Bash(brew list:*)"
     ]
   }
 }

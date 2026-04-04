@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import {
   collection, query, orderBy, onSnapshot,
-  doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, arrayUnion,
+  doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
-import type { Problem } from '@/components/ProblemDetail'
+import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
+import { SAMPLE_PROBLEMS } from '@/lib/sampleProblems'
+import { AnimatePresence } from 'framer-motion'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
-interface Note { text: string; author: string; createdAt: number }
 
 type Tab = 'available' | 'mine' | 'solved' | 'all'
 type AuthView = 'loading' | 'signin' | 'team-setup' | 'dashboard'
@@ -25,11 +26,6 @@ const STATUS_COLORS: Record<string, string> = {
 }
 const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
 const SEVERITY_LABEL = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical']
-const WILLINGNESS_LABEL: Record<string, string> = {
-  full: '🤝 Available as full client',
-  some: '💬 Available for questions',
-  minimal: '📧 Email only',
-}
 
 const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary focus:bg-white/[0.09] transition-colors'
 const labelCls = 'block text-sm font-medium text-white/80 mb-1'
@@ -51,9 +47,8 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   const [savingTeam, setSavingTeam] = useState(false)
   const [existingTeams, setExistingTeams] = useState<Team[]>([])
 
-  // Detail / notes state
+  // Detail flyout + email modal
   const [detailProblem, setDetailProblem] = useState<Problem | null>(null)
-  const [noteText, setNoteText] = useState('')
   const [emailModal, setEmailModal] = useState<{ problem: Problem; type: 'intro' | 'update' | 'solved' } | null>(null)
 
   // Auth listener
@@ -79,11 +74,12 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     return unsub
   }, [])
 
-  // Problems listener
+  // Problems listener — prepend samples so they always appear
   useEffect(() => {
     const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
     return onSnapshot(q, snap => {
-      setProblems(snap.docs.map(d => ({ id: d.id, ...d.data() } as Problem)))
+      const live = snap.docs.map(d => ({ id: d.id, ...d.data() } as Problem))
+      setProblems([...SAMPLE_PROBLEMS, ...live])
     })
   }, [])
 
@@ -162,12 +158,6 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     }
   }
 
-  async function addNote(problemId: string) {
-    if (!noteText.trim() || !user) return
-    const note: Note = { text: noteText.trim(), author: user.displayName || user.email || 'Student', createdAt: Date.now() }
-    await updateDoc(doc(db, 'problems', problemId), { internalNotes: arrayUnion(note) })
-    setNoteText('')
-  }
 
   // ── Filtered lists ───────────────────────────────────────
   const available = problems.filter(p => (p.status || 'new') === 'new')
@@ -391,103 +381,16 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      {/* ── DETAIL / NOTES PANEL ── */}
-      {detailProblem && (
-        <div className="fixed inset-0 z-[200] flex" onClick={e => e.target === e.currentTarget && setDetailProblem(null)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDetailProblem(null)} />
-          <div className="relative ml-auto w-full max-w-lg bg-[#131926] border-l border-white/[0.1] h-full overflow-y-auto flex flex-col shadow-2xl">
-            <div className="sticky top-0 bg-[#131926] border-b border-white/[0.08] px-6 py-4 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="font-bold text-white text-base leading-snug" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {detailProblem.title}
-                </h2>
-                <p className="text-white/35 text-xs mt-0.5">
-                  {detailProblem.submitterName}{detailProblem.submitterRole ? ` · ${detailProblem.submitterRole}` : ''}
-                </p>
-              </div>
-              <button onClick={() => setDetailProblem(null)} className="text-white/30 hover:text-white/70 text-lg mt-0.5 flex-shrink-0">✕</button>
-            </div>
-            <div className="px-6 py-5 flex flex-col gap-4 flex-1">
-              {/* Status badges */}
-              <div className="flex flex-wrap gap-1.5">
-                <span className={`text-[0.7rem] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[detailProblem.status || 'new']}`}>
-                  {STATUS_LABELS[detailProblem.status || 'new']}
-                </span>
-                {detailProblem.severity ? (
-                  <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
-                    {SEVERITY_EMOJI[detailProblem.severity]} {SEVERITY_LABEL[detailProblem.severity]}
-                  </span>
-                ) : null}
-                {detailProblem.claimedByTeam && (
-                  <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
-                    👥 {detailProblem.claimedByTeam}
-                  </span>
-                )}
-              </div>
-              {/* Photos */}
-              {(detailProblem.photos || []).length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {detailProblem.photos!.map((url, i) => (
-                    <img key={i} src={url} alt="" className="w-24 h-16 object-cover rounded-lg" />
-                  ))}
-                </div>
-              )}
-              <DetailSection label="Description" value={detailProblem.description} />
-              {detailProblem.affects && <DetailSection label="Who it affects" value={detailProblem.affects} />}
-              {detailProblem.where && <DetailSection label="Where" value={detailProblem.where} />}
-              {detailProblem.frequency && <DetailSection label="Frequency" value={detailProblem.frequency} />}
-              {detailProblem.duration && <DetailSection label="How long" value={detailProblem.duration} />}
-              {detailProblem.workaround && <DetailSection label="Current workaround" value={detailProblem.workaround} />}
-              {detailProblem.priorAttempts && <DetailSection label="Prior attempts" value={detailProblem.priorAttempts} />}
-              {detailProblem.constraints && <DetailSection label="Constraints" value={detailProblem.constraints} />}
-
-              {/* Contact info */}
-              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3">
-                <p className="text-white/35 text-[0.65rem] uppercase tracking-wider mb-1">Submitter Contact</p>
-                <p className="text-white/70 text-sm">{(detailProblem as unknown as Record<string,string>).submitterContact || 'Not provided'}</p>
-                {(detailProblem as unknown as Record<string,string>).willingness && (
-                  <p className="text-white/40 text-xs mt-1">{WILLINGNESS_LABEL[(detailProblem as unknown as Record<string,string>).willingness] || ''}</p>
-                )}
-              </div>
-
-              {/* Team notes (only for claiming team) */}
-              {detailProblem.claimedByTeam === team?.name && (
-                <div className="flex flex-col gap-3 mt-2">
-                  <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">
-                    📝 Team Notes <span className="font-normal normal-case">(only visible to your team)</span>
-                  </h3>
-                  <div className="flex flex-col gap-2">
-                    {((detailProblem as unknown as Record<string, Note[]>).internalNotes || []).length === 0 && (
-                      <p className="text-white/25 text-sm">No notes yet.</p>
-                    )}
-                    {((detailProblem as unknown as Record<string, Note[]>).internalNotes || []).map((n, i) => (
-                      <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
-                        <p className="text-white/75 text-sm">{n.text}</p>
-                        <p className="text-white/30 text-xs mt-1">{n.author}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {detailProblem.status !== 'solved' && (
-                    <div className="flex gap-2">
-                      <input
-                        value={noteText}
-                        onChange={e => setNoteText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addNote(detailProblem.id)}
-                        placeholder="Add a team note…"
-                        className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-                      />
-                      <button onClick={() => addNote(detailProblem.id)} disabled={!noteText.trim()}
-                        className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
-                        Add
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── DETAIL FLYOUT (shared component) ── */}
+      <AnimatePresence>
+        {detailProblem && (
+          <ProblemDetail
+            key={detailProblem.id}
+            problem={detailProblem}
+            onClose={() => setDetailProblem(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── EMAIL TEMPLATE MODAL ── */}
       {emailModal && (
@@ -734,15 +637,6 @@ function EmptyState({ icon, title, desc }: { icon: string; title: string; desc: 
       <span className="text-4xl">{icon}</span>
       <h3 className="text-white/60 font-semibold">{title}</h3>
       {desc && <p className="text-white/30 text-sm">{desc}</p>}
-    </div>
-  )
-}
-
-function DetailSection({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-white/35 text-[0.65rem] uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-white/75 text-sm leading-relaxed">{value}</p>
     </div>
   )
 }
