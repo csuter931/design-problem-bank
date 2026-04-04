@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { collection, orderBy, query, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { hasVoted, recordVote } from '@/lib/votes'
+import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { SAMPLE_PROBLEMS } from '@/lib/sampleProblems'
 import { SubmitWizard } from '@/components/SubmitWizard'
-import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
-import { StudentDashboard } from '@/components/StudentDashboard'
+import type { Problem } from '@/components/ProblemDetail'
+
+const ProblemDetail = lazy(() => import('@/components/ProblemDetail').then(m => ({ default: m.ProblemDetail })))
+const StudentDashboard = lazy(() => import('@/components/StudentDashboard').then(m => ({ default: m.StudentDashboard })))
 
 
 const STATUS_LABELS: Record<string, string> = {
@@ -57,7 +59,7 @@ function ProblemCard({ problem, onSelect }: {
       // Firestore failed — roll back optimistic state and localStorage
       setVoted(false)
       setLocalUpvotes(v => v - 1)
-      import('@/lib/votes').then(({ removeVote }) => removeVote(problem.id))
+      removeVote(problem.id)
     }
   }
 
@@ -248,21 +250,27 @@ function App() {
 
 
   if (view === 'student') {
-    return <StudentDashboard onBack={() => setView('gallery')} />
+    return (
+      <Suspense fallback={null}>
+        <StudentDashboard onBack={() => setView('gallery')} />
+      </Suspense>
+    )
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
-      <AnimatePresence>
-        {selectedProblem && (
-          <ProblemDetail
-            key={selectedProblem.id}
-            problem={selectedProblem}
-            onClose={() => setSelectedProblem(null)}
-          />
-        )}
-      </AnimatePresence>
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          {selectedProblem && (
+            <ProblemDetail
+              key={selectedProblem.id}
+              problem={selectedProblem}
+              onClose={() => setSelectedProblem(null)}
+            />
+          )}
+        </AnimatePresence>
+      </Suspense>
 
       {/* ── HERO (contains brand + stats + CTA) ────────────── */}
       <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { hasVoted, recordVote } from '@/lib/votes'
+import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 
 export interface Problem {
   id: string
@@ -81,7 +81,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
     } catch {
       setVoted(false)
       setUpvotes(v => v - 1)
-      import('@/lib/votes').then(({ removeVote }) => removeVote(problem.id))
+      removeVote(problem.id)
     }
   }
 
