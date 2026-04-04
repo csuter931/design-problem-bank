@@ -7,6 +7,13 @@ export function hasVoted(id: string): boolean {
   } catch { return false }
 }
 
+export function removeVote(id: string): void {
+  try {
+    const voted: string[] = JSON.parse(localStorage.getItem(KEY) || '[]')
+    localStorage.setItem(KEY, JSON.stringify(voted.filter(v => v !== id)))
+  } catch { /* ignore */ }
+}
+
 export function recordVote(id: string): void {
   try {
     const voted: string[] = JSON.parse(localStorage.getItem(KEY) || '[]')

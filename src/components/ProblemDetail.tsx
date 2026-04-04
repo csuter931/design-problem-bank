@@ -80,7 +80,13 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
     setVoted(true)
     recordVote(problem.id)
     setUpvotes(v => v + 1)
-    await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
+    try {
+      await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
+    } catch {
+      setVoted(false)
+      setUpvotes(v => v - 1)
+      import('@/lib/votes').then(({ removeVote }) => removeVote(problem.id))
+    }
   }
 
   async function handleComment() {

@@ -106,7 +106,14 @@ function ProblemCard({ problem, currentUser, onSelect }: {
     setVoted(true)
     recordVote(problem.id)
     setLocalUpvotes(v => v + 1)
-    await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
+    try {
+      await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
+    } catch {
+      // Firestore failed — roll back optimistic state and localStorage
+      setVoted(false)
+      setLocalUpvotes(v => v - 1)
+      import('@/lib/votes').then(({ removeVote }) => removeVote(problem.id))
+    }
   }
 
   function handleCommentClick(e: React.MouseEvent) {
