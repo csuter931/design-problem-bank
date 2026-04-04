@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { collection, orderBy, query, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
-import { onAuthStateChanged, type User } from 'firebase/auth'
-import { db, auth } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { hasVoted, recordVote } from '@/lib/votes'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
@@ -84,9 +83,8 @@ const FILTERS = [
 ]
 
 // ── ProblemCard ──────────────────────────────────────────
-function ProblemCard({ problem, currentUser, onSelect }: {
+function ProblemCard({ problem, onSelect }: {
   problem: Problem
-  currentUser: User | null
   onSelect: (p: Problem) => void
 }) {
   const status = problem.status || 'new'
@@ -118,8 +116,7 @@ function ProblemCard({ problem, currentUser, onSelect }: {
 
   function handleCommentClick(e: React.MouseEvent) {
     e.stopPropagation()
-    if (isSample) return
-    setCommentOpen(true)
+    if (!isSample) setCommentOpen(true)
   }
 
   return (
@@ -188,7 +185,6 @@ function ProblemCard({ problem, currentUser, onSelect }: {
       {commentOpen && (
         <CommentPopover
           problem={problem}
-          currentUser={currentUser}
           onClose={() => setCommentOpen(false)}
         />
       )}
@@ -197,26 +193,19 @@ function ProblemCard({ problem, currentUser, onSelect }: {
 }
 
 // ── CommentPopover ───────────────────────────────────────
-function CommentPopover({ problem, currentUser, onClose }: {
-  problem: Problem
-  currentUser: User | null
-  onClose: () => void
-}) {
+function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () => void }) {
+  const [name, setName] = useState('')
   const [text, setText] = useState('')
-  const [anonName, setAnonName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { inputRef.current?.focus() }, [])
+  useEffect(() => { nameRef.current?.focus() }, [])
 
   async function handlePost() {
-    const author = currentUser
-      ? (currentUser.displayName || currentUser.email || 'Student')
-      : anonName.trim()
-    if (!text.trim() || (!currentUser && !anonName.trim())) return
+    if (!text.trim() || !name.trim()) return
     setSubmitting(true)
-    const c = { text: text.trim(), author, createdAt: Date.now() }
+    const c = { text: text.trim(), author: name.trim(), createdAt: Date.now() }
     await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
     setDone(true)
     setTimeout(onClose, 1200)
@@ -240,42 +229,18 @@ function CommentPopover({ problem, currentUser, onClose }: {
           </div>
           <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors ml-2">✕</button>
         </div>
-
         {done ? (
           <p className="text-emerald-400 text-sm text-center py-2">✓ Comment posted!</p>
-        ) : currentUser ? (
-          <>
-            <p className="text-white/40 text-xs">Commenting as <span className="text-white/70">{currentUser.displayName || currentUser.email}</span></p>
-            <input
-              ref={inputRef}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handlePost()}
-              placeholder="What do you think?"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-            />
-            <button onClick={handlePost} disabled={submitting || !text.trim()}
-              className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
-              {submitting ? 'Posting…' : 'Post Comment'}
-            </button>
-          </>
         ) : (
           <>
-            <input
-              value={anonName}
-              onChange={e => setAnonName(e.target.value)}
+            <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
               placeholder="Your name (required)"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-            />
-            <input
-              ref={inputRef}
-              value={text}
-              onChange={e => setText(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
+            <input value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handlePost()}
               placeholder="What do you think?"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-            />
-            <button onClick={handlePost} disabled={submitting || !text.trim() || !anonName.trim()}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
+            <button onClick={handlePost} disabled={submitting || !text.trim() || !name.trim()}
               className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
               {submitting ? 'Posting…' : 'Post Comment'}
             </button>
@@ -295,7 +260,6 @@ function App() {
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [view, setView] = useState<'gallery' | 'student'>(() => {
     // Auto-navigate to student dashboard after Google OAuth redirect
     const flag = localStorage.getItem('reopenStudentPortal')
@@ -304,9 +268,6 @@ function App() {
     return (Date.now() - parseInt(flag)) < 5 * 60 * 1000 ? 'student' : 'gallery'
   })
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
-
-  // Track auth state so cards know if user is signed in
-  useEffect(() => onAuthStateChanged(auth, setCurrentUser), [])
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -463,7 +424,7 @@ function App() {
             <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {visible.map(p => <ProblemCard key={p.id} problem={p} currentUser={currentUser} onSelect={setSelectedProblem} />)}
+              {visible.map(p => <ProblemCard key={p.id} problem={p} onSelect={setSelectedProblem} />)}
             </div>
           )}
         </div>
