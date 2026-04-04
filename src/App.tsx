@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { collection, orderBy, query, onSnapshot } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { collection, orderBy, query, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
+import { onAuthStateChanged, type User } from 'firebase/auth'
+import { db, auth } from '@/lib/firebase'
+import { hasVoted, recordVote } from '@/lib/votes'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { StudentDashboard } from '@/components/StudentDashboard'
@@ -82,55 +84,198 @@ const FILTERS = [
 ]
 
 // ── ProblemCard ──────────────────────────────────────────
-function ProblemCard({ problem, onSelect }: { problem: Problem; onSelect: (p: Problem) => void }) {
+function ProblemCard({ problem, currentUser, onSelect }: {
+  problem: Problem
+  currentUser: User | null
+  onSelect: (p: Problem) => void
+}) {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
+  const isSample = problem.id.startsWith('sample-')
+
+  const [localUpvotes, setLocalUpvotes] = useState(problem.upvotes || 0)
+  const [voted, setVoted] = useState(() => hasVoted(problem.id))
+  const [commentOpen, setCommentOpen] = useState(false)
+
+  // Keep upvote count in sync if Firestore updates the problem
+  useEffect(() => { setLocalUpvotes(problem.upvotes || 0) }, [problem.upvotes])
+
+  async function handleUpvote(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (voted || isSample) return
+    setVoted(true)
+    recordVote(problem.id)
+    setLocalUpvotes(v => v + 1)
+    await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
+  }
+
+  function handleCommentClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (isSample) return
+    setCommentOpen(true)
+  }
 
   return (
-    <motion.div
-      layoutId={`problem-card-${problem.id}`}
-      onClick={() => onSelect(problem)}
-      className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-colors duration-300 flex flex-col"
-      transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-    >
-      <div className="h-[160px] bg-white/[0.04] flex items-center justify-center overflow-hidden flex-shrink-0">
-        {problem.photos?.[0] ? (
-          <img src={problem.photos[0]} alt={problem.title} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-5xl opacity-20">💡</span>
-        )}
-      </div>
-      <div className="p-4 flex flex-col flex-1">
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className={`text-[0.7rem] font-semibold px-2 py-0.5 rounded-full border ${statusColor}`}>
-            {STATUS_LABELS[status]}
-          </span>
-          {problem.severity ? (
-            <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
-              {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
-            </span>
-          ) : null}
-          {problem.claimedByTeam && (
-            <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
-              👥 {problem.claimedByTeam}
-            </span>
+    <>
+      <motion.div
+        layoutId={`problem-card-${problem.id}`}
+        onClick={() => onSelect(problem)}
+        className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:bg-white/[0.08] hover:border-white/[0.16] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-colors duration-300 flex flex-col"
+        transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+      >
+        <div className="h-[160px] bg-white/[0.04] flex items-center justify-center overflow-hidden flex-shrink-0">
+          {problem.photos?.[0] ? (
+            <img src={problem.photos[0]} alt={problem.title} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-5xl opacity-20">💡</span>
           )}
         </div>
-        <h3 className="font-bold text-white text-base leading-snug mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          {problem.title}
-        </h3>
-        <p className="text-white/50 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
-          {problem.description}
-        </p>
-        <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
-          <span className="text-white/35 text-xs">by {problem.submitterName || 'Anonymous'}</span>
-          <div className="flex items-center gap-3 text-white/35 text-xs">
-            <span>▲ {problem.upvotes || 0}</span>
-            <span>💬 {(problem.comments || []).length}</span>
+        <div className="p-4 flex flex-col flex-1">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <span className={`text-[0.7rem] font-semibold px-2 py-0.5 rounded-full border ${statusColor}`}>
+              {STATUS_LABELS[status]}
+            </span>
+            {problem.severity ? (
+              <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
+              </span>
+            ) : null}
+            {problem.claimedByTeam && (
+              <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                👥 {problem.claimedByTeam}
+              </span>
+            )}
+          </div>
+          <h3 className="font-bold text-white text-base leading-snug mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {problem.title}
+          </h3>
+          <p className="text-white/50 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
+            {problem.description}
+          </p>
+          <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
+            <span className="text-white/35 text-xs">by {problem.submitterName || 'Anonymous'}</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleUpvote}
+                disabled={voted || isSample}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
+                  voted
+                    ? 'text-primary bg-primary/10'
+                    : 'text-white/35 hover:text-white/70 hover:bg-white/[0.06]'
+                } disabled:cursor-default`}
+              >
+                ▲ {localUpvotes}
+              </button>
+              <button
+                onClick={handleCommentClick}
+                disabled={isSample}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-all disabled:cursor-default"
+              >
+                💬 {(problem.comments || []).length}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {commentOpen && (
+        <CommentPopover
+          problem={problem}
+          currentUser={currentUser}
+          onClose={() => setCommentOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// ── CommentPopover ───────────────────────────────────────
+function CommentPopover({ problem, currentUser, onClose }: {
+  problem: Problem
+  currentUser: User | null
+  onClose: () => void
+}) {
+  const [text, setText] = useState('')
+  const [anonName, setAnonName] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  async function handlePost() {
+    const author = currentUser
+      ? (currentUser.displayName || currentUser.email || 'Student')
+      : anonName.trim()
+    if (!text.trim() || (!currentUser && !anonName.trim())) return
+    setSubmitting(true)
+    const c = { text: text.trim(), author, createdAt: Date.now() }
+    await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
+    setDone(true)
+    setTimeout(onClose, 1200)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ duration: 0.15 }}
+        className="relative w-full max-w-sm bg-[#131926] border border-white/[0.12] rounded-2xl shadow-2xl p-4 flex flex-col gap-3"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-white text-sm font-semibold leading-snug line-clamp-1">{problem.title}</p>
+            <p className="text-white/35 text-xs mt-0.5">Leave a comment</p>
+          </div>
+          <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors ml-2">✕</button>
+        </div>
+
+        {done ? (
+          <p className="text-emerald-400 text-sm text-center py-2">✓ Comment posted!</p>
+        ) : currentUser ? (
+          <>
+            <p className="text-white/40 text-xs">Commenting as <span className="text-white/70">{currentUser.displayName || currentUser.email}</span></p>
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handlePost()}
+              placeholder="What do you think?"
+              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            <button onClick={handlePost} disabled={submitting || !text.trim()}
+              className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
+              {submitting ? 'Posting…' : 'Post Comment'}
+            </button>
+          </>
+        ) : (
+          <>
+            <input
+              value={anonName}
+              onChange={e => setAnonName(e.target.value)}
+              placeholder="Your name (required)"
+              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handlePost()}
+              placeholder="What do you think?"
+              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            <button onClick={handlePost} disabled={submitting || !text.trim() || !anonName.trim()}
+              className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
+              {submitting ? 'Posting…' : 'Post Comment'}
+            </button>
+          </>
+        )}
+      </motion.div>
+    </div>
   )
 }
 
@@ -143,6 +288,7 @@ function App() {
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [view, setView] = useState<'gallery' | 'student'>(() => {
     // Auto-navigate to student dashboard after Google OAuth redirect
     const flag = localStorage.getItem('reopenStudentPortal')
@@ -151,6 +297,9 @@ function App() {
     return (Date.now() - parseInt(flag)) < 5 * 60 * 1000 ? 'student' : 'gallery'
   })
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+
+  // Track auth state so cards know if user is signed in
+  useEffect(() => onAuthStateChanged(auth, setCurrentUser), [])
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -307,7 +456,7 @@ function App() {
             <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {visible.map(p => <ProblemCard key={p.id} problem={p} onSelect={setSelectedProblem} />)}
+              {visible.map(p => <ProblemCard key={p.id} problem={p} currentUser={currentUser} onSelect={setSelectedProblem} />)}
             </div>
           )}
         </div>

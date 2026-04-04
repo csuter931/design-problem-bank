@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { hasVoted, recordVote } from '@/lib/votes'
 import type { StudentSession } from './StudentPortal'
 
 export interface Problem {
@@ -60,8 +61,9 @@ interface Props {
 export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
-  const [voted, setVoted] = useState(false)
+  const [voted, setVoted] = useState(() => hasVoted(problem.id))
   const [commentText, setCommentText] = useState('')
+  const [anonName, setAnonName] = useState('')
   const [comments, setComments] = useState<Comment[]>(
     ((problem.comments || []) as unknown[]).filter((c): c is Comment =>
       typeof c === 'object' && c !== null && 'text' in c
@@ -76,18 +78,18 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
   async function handleUpvote() {
     if (voted || isSample) return
     setVoted(true)
+    recordVote(problem.id)
     setUpvotes(v => v + 1)
     await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
   }
 
   async function handleComment() {
-    if (!commentText.trim() || !session?.user || isSample) return
+    const author = session?.user
+      ? (session.user.displayName || session.user.email || 'Student')
+      : anonName.trim()
+    if (!commentText.trim() || (!session?.user && !anonName.trim()) || isSample) return
     setSubmittingComment(true)
-    const c: Comment = {
-      text: commentText.trim(),
-      author: session.user.displayName || session.user.email || 'Student',
-      createdAt: Date.now(),
-    }
+    const c: Comment = { text: commentText.trim(), author, createdAt: Date.now() }
     await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
     setComments(prev => [...prev, c])
     setCommentText('')
@@ -237,25 +239,33 @@ export function ProblemDetail({ problem, session, onClose, onClaim }: Props) {
                   </div>
                 ))}
               </div>
-              {session?.user && !isSample ? (
-                <div className="flex gap-2">
-                  <input
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleComment()}
-                    placeholder="Add a comment…"
-                    className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
-                  <button
-                    onClick={handleComment}
-                    disabled={submittingComment || !commentText.trim()}
-                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
-                  >
-                    Post
-                  </button>
+              {!isSample && (
+                <div className="flex flex-col gap-2">
+                  {!session?.user && (
+                    <input
+                      value={anonName}
+                      onChange={e => setAnonName(e.target.value)}
+                      placeholder="Your name (required)"
+                      className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleComment()}
+                      placeholder="Add a comment…"
+                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      onClick={handleComment}
+                      disabled={submittingComment || !commentText.trim() || (!session?.user && !anonName.trim())}
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
+                    >
+                      Post
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                !isSample && <p className="text-white/25 text-xs">Sign in to leave a comment.</p>
               )}
             </div>
           </div>
