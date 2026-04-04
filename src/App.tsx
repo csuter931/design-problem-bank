@@ -168,7 +168,12 @@ function App() {
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [portalOpen, setPortalOpen] = useState(false)
+  const [portalOpen, setPortalOpen] = useState(() => {
+    // Reopen the portal automatically after a Google OAuth redirect
+    const flag = sessionStorage.getItem('reopenStudentPortal')
+    if (flag) sessionStorage.removeItem('reopenStudentPortal')
+    return !!flag
+  })
   const [session, setSession] = useState<StudentSession | null>(null)
 
   // Load from Firestore in real-time
