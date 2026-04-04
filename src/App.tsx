@@ -155,8 +155,10 @@ function App() {
   const [portalOpen, setPortalOpen] = useState(() => {
     // Reopen the portal automatically after a Google OAuth redirect
     const flag = localStorage.getItem('reopenStudentPortal')
-    if (flag) localStorage.removeItem('reopenStudentPortal')
-    return !!flag
+    if (!flag) return false
+    localStorage.removeItem('reopenStudentPortal')
+    // Only honour the flag if it was set in the last 5 minutes
+    return (Date.now() - parseInt(flag)) < 5 * 60 * 1000
   })
   const [session, setSession] = useState<StudentSession | null>(null)
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
