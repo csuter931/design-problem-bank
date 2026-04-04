@@ -170,8 +170,8 @@ function App() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [portalOpen, setPortalOpen] = useState(() => {
     // Reopen the portal automatically after a Google OAuth redirect
-    const flag = sessionStorage.getItem('reopenStudentPortal')
-    if (flag) sessionStorage.removeItem('reopenStudentPortal')
+    const flag = localStorage.getItem('reopenStudentPortal')
+    if (flag) localStorage.removeItem('reopenStudentPortal')
     return !!flag
   })
   const [session, setSession] = useState<StudentSession | null>(null)

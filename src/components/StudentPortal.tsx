@@ -80,12 +80,12 @@ export function StudentPortal({ onClose, onSessionChange }: Props) {
     setError('')
     // If the browser blocks the popup and Firebase falls back to a redirect,
     // the page will reload. Set a flag so App.tsx can reopen the portal.
-    sessionStorage.setItem('reopenStudentPortal', '1')
+    localStorage.setItem('reopenStudentPortal', '1')
     try {
       await signInWithPopup(auth, new GoogleAuthProvider())
-      sessionStorage.removeItem('reopenStudentPortal')
+      localStorage.removeItem('reopenStudentPortal')
     } catch (e: unknown) {
-      sessionStorage.removeItem('reopenStudentPortal')
+      localStorage.removeItem('reopenStudentPortal')
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg.includes('popup-closed') ? 'Sign-in cancelled.' : 'Sign-in failed. Try again.')
     } finally {
