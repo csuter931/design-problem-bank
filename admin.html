@@ -59,6 +59,7 @@
                         <span id="headerTeamName">Team Name</span>
                     </div>
                     <button class="btn btn-ghost" id="settingsBtn" style="color:rgba(255,255,255,0.7); display:none; font-size:1.2rem; padding:0.3rem;" title="Team Settings" onclick="openSettings()">&#x2699;</button>
+                    <button class="btn btn-ghost" id="manageTeamsBtn" style="color:rgba(255,255,255,0.7); display:none; font-size:0.82rem; padding:0.4rem 0.75rem;" onclick="openManageTeams()">&#x1f465; Manage Teams</button>
                     <div class="user-info" id="headerUserInfo">
                         <img class="user-avatar" id="headerAvatar" src="" alt="">
                         <span id="headerUserName"></span>
@@ -208,6 +209,24 @@
     <div class="modal-overlay" id="emailModal">
         <div class="modal" id="emailModalContent">
             <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- ===== MANAGE TEAMS MODAL ===== -->
+    <div class="modal-overlay" id="manageTeamsModal">
+        <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+                <div><h2>&#x1f465; Manage Teams</h2></div>
+                <button class="modal-close" onclick="closeManageTeams()">×</button>
+            </div>
+            <div style="padding:1.5rem 2rem;">
+                <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:1.25rem;">
+                    Deleting a team releases all their claimed problems back to Available.
+                </p>
+                <div id="manageTeamsList">
+                    <div style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading teams…</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -656,6 +675,8 @@
                 switchTabById('available');
             }
         }
+
+        document.getElementById('manageTeamsBtn').style.display = isSuperUser ? 'inline-flex' : 'none';
 
         document.getElementById('headerUserName').textContent = currentUser.displayName;
         if (currentUser.photoURL) {
@@ -1529,6 +1550,116 @@ ${contactEmail}`;
     }
 
     // =========================================================
+    // MANAGE TEAMS (super user only)
+    // =========================================================
+    async function openManageTeams() {
+        if (!isSuperUser) return;
+        const modal = document.getElementById('manageTeamsModal');
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+        await loadTeamsForManagement();
+    }
+
+    function closeManageTeams() {
+        const modal = document.getElementById('manageTeamsModal');
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+
+    async function loadTeamsForManagement() {
+        const container = document.getElementById('manageTeamsList');
+        container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading teams…</div>';
+
+        if (!useFirebase) {
+            container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">Team management requires Firebase.</div>';
+            return;
+        }
+
+        try {
+            const snapshot = await db.collection('teams').get();
+            const docs = snapshot.docs.map(d => ({ docId: d.id, ...d.data() }));
+
+            // Group by team name
+            const teamMap = new Map();
+            docs.forEach(d => {
+                if (!d.name) return;
+                if (!teamMap.has(d.name)) teamMap.set(d.name, []);
+                teamMap.get(d.name).push(d);
+            });
+
+            if (teamMap.size === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">No teams found.</div>';
+                return;
+            }
+
+            container.innerHTML = Array.from(teamMap.entries()).map(([name, members]) => {
+                const claimedCount = allProblems.filter(p =>
+                    p.claimedByTeam === name && (p.status === 'claimed' || p.status === 'inprogress')
+                ).length;
+                return `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;">
+                    <div>
+                        <div style="font-weight:600;font-size:0.95rem;">${escapeHtml(name)}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);">
+                            ${members.length} member${members.length !== 1 ? 's' : ''}
+                            ${claimedCount > 0 ? ` · ${claimedCount} active problem${claimedCount !== 1 ? 's' : ''}` : ''}
+                        </div>
+                    </div>
+                    <button class="btn btn-sm" style="background:#c62828;color:#fff;border:none;flex-shrink:0;"
+                        onclick="deleteTeam('${escapeHtml(name).replace(/'/g, "\\'")}')">
+                        Delete
+                    </button>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            console.error('loadTeamsForManagement error:', e);
+            container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">Failed to load teams.</div>';
+        }
+    }
+
+    async function deleteTeam(teamName) {
+        if (!isSuperUser) return;
+        if (!confirm(`Delete team "${teamName}"? Their claimed problems will return to Available.`)) return;
+
+        try {
+            // Reset all problems claimed by this team
+            const claimedProblems = allProblems.filter(p =>
+                p.claimedByTeam === teamName && (p.status === 'claimed' || p.status === 'inprogress')
+            );
+            await Promise.all(claimedProblems.map(p =>
+                db.collection('problems').doc(p.id).update({
+                    status: 'new',
+                    claimedByTeam: firebase.firestore.FieldValue.delete(),
+                    claimedByUser: firebase.firestore.FieldValue.delete(),
+                    claimedAt: firebase.firestore.FieldValue.delete()
+                })
+            ));
+
+            // Delete all team documents for this team name
+            const snapshot = await db.collection('teams').where('name', '==', teamName).get();
+            await Promise.all(snapshot.docs.map(d => d.ref.delete()));
+
+            // Update local problem cache
+            claimedProblems.forEach(p => {
+                const local = allProblems.find(lp => lp.id === p.id);
+                if (local) {
+                    local.status = 'new';
+                    delete local.claimedByTeam;
+                    delete local.claimedByUser;
+                    delete local.claimedAt;
+                }
+            });
+
+            showToast(`Team "${teamName}" deleted`);
+            renderDashboard();
+            await loadTeamsForManagement();
+        } catch(e) {
+            console.error('deleteTeam error:', e);
+            showToast('Error deleting team — check console');
+        }
+    }
+
+    // =========================================================
     // COMMENTS POPUP (read-only view of public comments)
     // =========================================================
     function showCommentsPopup(event, problemId) {
@@ -1634,12 +1765,14 @@ ${contactEmail}`;
     document.getElementById('emailModal').addEventListener('click', function(e) { if (e.target === this) closeEmailModal(); });
     document.getElementById('teamModal').addEventListener('click', function(e) { if (e.target === this) closeTeamModal(); });
     document.getElementById('settingsModal').addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
+    document.getElementById('manageTeamsModal').addEventListener('click', function(e) { if (e.target === this) closeManageTeams(); });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeActionModal();
             closeEmailModal();
             closeTeamModal();
             closeSettings();
+            closeManageTeams();
         }
     });
 

@@ -281,7 +281,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setTeamSetupOpen(true)} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
-                    Set up team
+                    Join or create a team
                   </button>
                 </div>
               </div>
