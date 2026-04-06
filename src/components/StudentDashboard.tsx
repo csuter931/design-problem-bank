@@ -160,8 +160,12 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
 
   // ── Filtered lists ───────────────────────────────────────
-  const available = problems.filter(p => (p.status || 'new') === 'new')
-  const mine = problems.filter(p => p.claimedByTeam === team?.name && p.status !== 'solved')
+  const available = problems.filter(p =>
+    (p.status || 'new') !== 'solved' && (!team || p.claimedByTeam !== team.name)
+  )
+  const mine = problems.filter(p =>
+    !!team && p.claimedByTeam === team.name && p.status !== 'solved'
+  )
   const solved = problems.filter(p => p.status === 'solved')
 
   const TABS: { id: Tab; label: string; count: number }[] = [
@@ -461,7 +465,7 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 px-4 pb-4">
-        {context === 'available' && (
+        {context === 'available' && (problem.status || 'new') === 'new' && (
           team
             ? <button onClick={() => onClaim(problem.id)} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors">🙋 Claim</button>
             : <span className="text-xs text-white/25">Join a team to claim</span>

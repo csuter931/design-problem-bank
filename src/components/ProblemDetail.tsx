@@ -204,7 +204,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleUpvote}
-                disabled={voted || isSample}
+                disabled={isSample}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
                     ? 'bg-primary/20 border-primary/40 text-primary cursor-default'
