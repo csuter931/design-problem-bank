@@ -42,7 +42,6 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   // Team setup state
   const [teamMode, setTeamMode] = useState<'create' | 'join'>('create')
   const [teamName, setTeamName] = useState('')
-  const [teamMembers, setTeamMembers] = useState('')
   const [savingTeam, setSavingTeam] = useState(false)
   const [existingTeams, setExistingTeams] = useState<Team[]>([])
 
@@ -112,7 +111,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   async function handleCreateTeam() {
     if (!teamName.trim() || !user) return
     setSavingTeam(true)
-    const t: Team = { name: teamName.trim(), members: teamMembers.trim(), joinedAt: Date.now() }
+    const t: Team = { name: teamName.trim(), members: '', joinedAt: Date.now() }
     await setDoc(doc(db, 'teams', user.uid), t)
     setTeam(t); setAuthView('dashboard')
     setSavingTeam(false)
@@ -277,10 +276,6 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   <label className={labelCls}>Team Name <span className="text-red-400">*</span></label>
                   <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder='e.g., "Studio Six"' maxLength={40} className={inputCls} />
                 </div>
-                <div>
-                  <label className={labelCls}>Members <span className="text-white/30 font-normal">(optional)</span></label>
-                  <input value={teamMembers} onChange={e => setTeamMembers(e.target.value)} placeholder='e.g., "Alex, Jamie, Sam"' className={inputCls} />
-                </div>
                 <button onClick={handleCreateTeam} disabled={savingTeam || !teamName.trim()}
                   className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
                   {savingTeam ? 'Creating…' : '🚀 Create Team'}
@@ -332,7 +327,6 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-white font-semibold text-sm">👥 {team.name}</p>
-                  {team.members && <p className="text-white/40 text-xs">{team.members}</p>}
                 </div>
                 <button onClick={handleLeaveTeam} className="text-xs text-white/30 hover:text-red-400 transition-colors">
                   Leave team
