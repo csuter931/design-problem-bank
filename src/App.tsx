@@ -5,9 +5,8 @@ import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { SAMPLE_PROBLEMS } from '@/lib/sampleProblems'
 import { SubmitWizard } from '@/components/SubmitWizard'
-import type { Problem } from '@/components/ProblemDetail'
+import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 
-const ProblemDetail = lazy(() => import('@/components/ProblemDetail').then(m => ({ default: m.ProblemDetail })))
 const StudentDashboard = lazy(() => import('@/components/StudentDashboard').then(m => ({ default: m.StudentDashboard })))
 
 
@@ -260,17 +259,15 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
-      <Suspense fallback={null}>
-        <AnimatePresence>
-          {selectedProblem && (
-            <ProblemDetail
-              key={selectedProblem.id}
-              problem={selectedProblem}
-              onClose={() => setSelectedProblem(null)}
-            />
-          )}
-        </AnimatePresence>
-      </Suspense>
+      <AnimatePresence>
+        {selectedProblem && (
+          <ProblemDetail
+            key={selectedProblem.id}
+            problem={selectedProblem}
+            onClose={() => setSelectedProblem(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── HERO (contains brand + stats + CTA) ────────────── */}
       <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">
