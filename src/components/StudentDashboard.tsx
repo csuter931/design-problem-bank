@@ -292,7 +292,6 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                       className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 transition-all disabled:opacity-50">
                       <div className="text-left">
                         <p className="text-white text-sm font-medium">{t.name}</p>
-                        {t.members && <p className="text-white/40 text-xs">{t.members}</p>}
                       </div>
                       <span className="text-white/30 text-sm">Join →</span>
                     </button>
