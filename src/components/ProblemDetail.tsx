@@ -69,10 +69,9 @@ export function ProblemDetail({ problem, onClose }: Props) {
   const [submittingComment, setSubmittingComment] = useState(false)
 
   const status = problem.status || 'new'
-  const isSample = problem.id.startsWith('sample-')
 
   async function handleUpvote() {
-    if (voted || isSample) return
+    if (voted) return
     setVoted(true)
     recordVote(problem.id)
     setUpvotes(v => v + 1)
@@ -86,7 +85,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
   }
 
   async function handleComment() {
-    if (!commentText.trim() || !anonName.trim() || isSample) return
+    if (!commentText.trim() || !anonName.trim()) return
     const author = anonName.trim()
     setSubmittingComment(true)
     const c: Comment = { text: commentText.trim(), author, createdAt: Date.now() }
@@ -204,7 +203,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleUpvote}
-                disabled={isSample}
+                disabled={voted}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
                     ? 'bg-primary/20 border-primary/40 text-primary cursor-default'
@@ -231,7 +230,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
                   </div>
                 ))}
               </div>
-              {!isSample && (
+              {(
                 <div className="flex flex-col gap-2">
                   <input
                     value={anonName}

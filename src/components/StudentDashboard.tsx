@@ -6,7 +6,6 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
-import { SAMPLE_PROBLEMS } from '@/lib/sampleProblems'
 import { AnimatePresence } from 'framer-motion'
 
 // ── Types ────────────────────────────────────────────────
@@ -79,7 +78,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
     return onSnapshot(q, snap => {
       const live = snap.docs.map(d => ({ id: d.id, ...d.data() } as Problem))
-      setProblems([...SAMPLE_PROBLEMS, ...live])
+      setProblems(live)
     })
   }, [])
 

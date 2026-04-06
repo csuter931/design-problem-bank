@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { collection, orderBy, query, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
-import { SAMPLE_PROBLEMS } from '@/lib/sampleProblems'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 
@@ -37,7 +36,6 @@ function ProblemCard({ problem, onSelect }: {
 }) {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
-  const isSample = problem.id.startsWith('sample-')
 
   const [localUpvotes, setLocalUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
@@ -48,14 +46,13 @@ function ProblemCard({ problem, onSelect }: {
 
   async function handleUpvote(e: React.MouseEvent) {
     e.stopPropagation()
-    if (voted || isSample) return
+    if (voted) return
     setVoted(true)
     recordVote(problem.id)
     setLocalUpvotes(v => v + 1)
     try {
       await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
     } catch {
-      // Firestore failed — roll back optimistic state and localStorage
       setVoted(false)
       setLocalUpvotes(v => v - 1)
       removeVote(problem.id)
@@ -64,7 +61,7 @@ function ProblemCard({ problem, onSelect }: {
 
   function handleCommentClick(e: React.MouseEvent) {
     e.stopPropagation()
-    if (!isSample) setCommentOpen(true)
+    setCommentOpen(true)
   }
 
   return (
@@ -109,19 +106,17 @@ function ProblemCard({ problem, onSelect }: {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleUpvote}
-                disabled={voted || isSample}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
                   voted
-                    ? 'text-primary bg-primary/10'
+                    ? 'text-primary bg-primary/10 cursor-default'
                     : 'text-white/35 hover:text-white/70 hover:bg-white/[0.06]'
-                } disabled:cursor-default`}
+                }`}
               >
                 ▲ {localUpvotes}
               </button>
               <button
                 onClick={handleCommentClick}
-                disabled={isSample}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-all disabled:cursor-default"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-all"
               >
                 💬 {(problem.comments || []).length}
               </button>
@@ -222,7 +217,7 @@ function App() {
     const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(q, (snap) => {
       const firestoreProblems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Problem))
-      setProblems([...SAMPLE_PROBLEMS, ...firestoreProblems])
+      setProblems(firestoreProblems)
       setLoading(false)
     }, () => setLoading(false))
     return unsub
