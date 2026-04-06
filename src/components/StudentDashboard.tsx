@@ -12,7 +12,7 @@ import { AnimatePresence } from 'framer-motion'
 interface Team { name: string; members: string; joinedAt?: number }
 
 type Tab = 'available' | 'mine' | 'solved' | 'all'
-type AuthView = 'loading' | 'signin' | 'team-setup' | 'dashboard'
+type AuthView = 'loading' | 'signin' | 'dashboard'
 
 const STATUS_LABELS: Record<string, string> = {
   new: 'NEW', claimed: 'CLAIMED', inprogress: 'IN PROGRESS', solved: 'SOLVED',
@@ -39,7 +39,8 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   const [signingIn, setSigningIn] = useState(false)
   const [signInError, setSignInError] = useState('')
 
-  // Team setup state
+  // Team setup modal
+  const [teamSetupOpen, setTeamSetupOpen] = useState(false)
   const [teamMode, setTeamMode] = useState<'create' | 'join'>('create')
   const [teamName, setTeamName] = useState('')
   const [savingTeam, setSavingTeam] = useState(false)
@@ -61,12 +62,13 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           setAuthView('dashboard')
         } else {
           try { await loadExistingTeams() } catch { /* non-fatal */ }
-          setAuthView('team-setup')
+          setAuthView('dashboard')
+          setTeamSetupOpen(true)
         }
       } catch (e) {
         console.error('Failed to load team:', e)
-        // Can't read Firestore — still let them in, just without a team
-        setAuthView('team-setup')
+        setAuthView('dashboard')
+        setTeamSetupOpen(true)
       }
     })
     return unsub
@@ -113,7 +115,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     setSavingTeam(true)
     const t: Team = { name: teamName.trim(), members: '', joinedAt: Date.now() }
     await setDoc(doc(db, 'teams', user.uid), t)
-    setTeam(t); setAuthView('dashboard')
+    setTeam(t); setTeamSetupOpen(false); setTeamName('')
     setSavingTeam(false)
   }
 
@@ -121,16 +123,16 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     if (!user) return
     setSavingTeam(true)
     await setDoc(doc(db, 'teams', user.uid), t)
-    setTeam(t); setAuthView('dashboard')
+    setTeam(t); setTeamSetupOpen(false)
     setSavingTeam(false)
   }
 
   async function handleLeaveTeam() {
     if (!user || !confirm('Leave your team? You can rejoin or create a new one anytime.')) return
     await deleteDoc(doc(db, 'teams', user.uid))
-    setTeam(null); setTeamName(''); setTeamMembers('')
+    setTeam(null); setTeamName('')
     await loadExistingTeams()
-    setAuthView('team-setup')
+    setTeamSetupOpen(true)
   }
 
   async function claimProblem(id: string) {
@@ -250,56 +252,20 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {/* ── TEAM SETUP ── */}
-        {authView === 'team-setup' && user && (
-          <div className="max-w-md mx-auto flex flex-col gap-6 pt-8">
-            <div>
-              <p className="text-white/40 text-xs mb-1">Signed in as {user.email}</p>
-              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Set up your team
-              </h2>
-              <p className="text-white/45 text-sm mt-1">Create a new team or join an existing one to start claiming problems.</p>
-            </div>
-
-            <div className="flex gap-2">
-              {(['create', 'join'] as const).map(m => (
-                <button key={m} onClick={() => setTeamMode(m)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${teamMode === m ? 'bg-primary border-primary text-white' : 'border-white/[0.15] text-white/50 hover:text-white/80'}`}>
-                  {m === 'create' ? '➕ Create Team' : '👥 Join Team'}
-                </button>
-              ))}
-            </div>
-
-            {teamMode === 'create' && (
-              <div className="flex flex-col gap-4 bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5">
-                <div>
-                  <label className={labelCls}>Team Name <span className="text-red-400">*</span></label>
-                  <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder='e.g., "Studio Six"' maxLength={40} className={inputCls} />
-                </div>
-                <button onClick={handleCreateTeam} disabled={savingTeam || !teamName.trim()}
-                  className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
-                  {savingTeam ? 'Creating…' : '🚀 Create Team'}
-                </button>
-              </div>
-            )}
-
-            {teamMode === 'join' && (
-              <div className="flex flex-col gap-2">
-                {existingTeams.length === 0
-                  ? <p className="text-white/30 text-sm text-center py-6">No existing teams yet — create one!</p>
-                  : existingTeams.map(t => (
-                    <button key={t.name} onClick={() => handleJoinTeam(t)} disabled={savingTeam}
-                      className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 transition-all disabled:opacity-50">
-                      <div className="text-left">
-                        <p className="text-white text-sm font-medium">{t.name}</p>
-                      </div>
-                      <span className="text-white/30 text-sm">Join →</span>
-                    </button>
-                  ))
-                }
-              </div>
-            )}
-          </div>
+        {/* ── TEAM SETUP MODAL ── */}
+        {teamSetupOpen && user && (
+          <TeamSetupModal
+            user={user}
+            teamMode={teamMode}
+            teamName={teamName}
+            savingTeam={savingTeam}
+            existingTeams={existingTeams}
+            onClose={() => setTeamSetupOpen(false)}
+            onSetMode={setTeamMode}
+            onSetName={setTeamName}
+            onCreate={handleCreateTeam}
+            onJoin={handleJoinTeam}
+          />
         )}
 
         {/* ── DASHBOARD ── */}
@@ -314,7 +280,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   <p className="text-white/45 text-xs">Join or create a team to claim problems.</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => setAuthView('team-setup')} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+                  <button onClick={() => setTeamSetupOpen(true)} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
                     Set up team
                   </button>
                 </div>
@@ -482,6 +448,79 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         {(context === 'all' || context === 'solved') && (
           <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">View details →</button>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── TeamSetupModal ───────────────────────────────────────
+function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, onClose, onSetMode, onSetName, onCreate, onJoin }: {
+  user: import('firebase/auth').User
+  teamMode: 'create' | 'join'
+  teamName: string
+  savingTeam: boolean
+  existingTeams: Team[]
+  onClose: () => void
+  onSetMode: (m: 'create' | 'join') => void
+  onSetName: (v: string) => void
+  onCreate: () => void
+  onJoin: (t: Team) => void
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
+          <div>
+            <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>Set up your team</h2>
+            <p className="text-white/40 text-xs mt-0.5">Signed in as {user.email}</p>
+          </div>
+          <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
+          <div className="flex gap-2">
+            {(['create', 'join'] as const).map(m => (
+              <button key={m} onClick={() => onSetMode(m)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${teamMode === m ? 'bg-primary border-primary text-white' : 'border-white/[0.15] text-white/50 hover:text-white/80'}`}>
+                {m === 'create' ? '➕ Create Team' : '👥 Join Team'}
+              </button>
+            ))}
+          </div>
+
+          {teamMode === 'create' && (
+            <div className="flex flex-col gap-4 bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5">
+              <div>
+                <label className={labelCls}>Team Name <span className="text-red-400">*</span></label>
+                <input value={teamName} onChange={e => onSetName(e.target.value)} placeholder='e.g., "Studio Six"' maxLength={40} className={inputCls} autoFocus />
+              </div>
+              <button onClick={onCreate} disabled={savingTeam || !teamName.trim()}
+                className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+                {savingTeam ? 'Creating…' : '🚀 Create Team'}
+              </button>
+            </div>
+          )}
+
+          {teamMode === 'join' && (
+            <div className="flex flex-col gap-2">
+              {existingTeams.length === 0
+                ? <p className="text-white/30 text-sm text-center py-6">No existing teams yet — create one!</p>
+                : existingTeams.map(t => (
+                  <button key={t.name} onClick={() => onJoin(t)} disabled={savingTeam}
+                    className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 transition-all disabled:opacity-50">
+                    <p className="text-white text-sm font-medium">{t.name}</p>
+                    <span className="text-white/30 text-sm">Join →</span>
+                  </button>
+                ))
+              }
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
