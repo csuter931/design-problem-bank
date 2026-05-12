@@ -14,6 +14,7 @@ export interface Problem {
   disciplines?: string[]
   submitterName?: string
   submitterRole?: string
+  submitterContact?: string
   claimedByTeam?: string
   upvotes?: number
   comments?: unknown[]
@@ -26,6 +27,7 @@ export interface Problem {
   workaround?: string
   priorAttempts?: string
   constraints?: string
+  internalNotes?: Array<{ author: string; text: string; createdAt: number }>
 }
 
 interface Comment {
@@ -53,9 +55,16 @@ const FREQUENCY_LABELS: Record<string, string> = {
 interface Props {
   problem: Problem
   onClose: () => void
+  isSuperUser?: boolean
+  currentTeam?: { name: string; members: string; joinedAt?: number } | null
+  user?: import('firebase/auth').User | null
+  onEdit?: (p: Problem) => void
+  onDelete?: (id: string) => void
+  onUnclaim?: (id: string) => void
+  onNoteAdded?: (id: string, notes: Array<{ author: string; text: string; createdAt: number }>) => void
 }
 
-export function ProblemDetail({ problem, onClose }: Props) {
+export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onEdit, onDelete, onUnclaim, onNoteAdded }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
@@ -67,8 +76,13 @@ export function ProblemDetail({ problem, onClose }: Props) {
     )
   )
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [notes, setNotes] = useState(problem.internalNotes ?? [])
+  const [submittingNote, setSubmittingNote] = useState(false)
 
   const status = problem.status || 'new'
+  const canSeeNotes = isSuperUser || (!!currentTeam && currentTeam.name === problem.claimedByTeam)
+  const canAddNote = canSeeNotes && (isSuperUser || status !== 'solved')
 
   async function handleUpvote() {
     if (voted) return
@@ -95,6 +109,30 @@ export function ProblemDetail({ problem, onClose }: Props) {
     setSubmittingComment(false)
   }
 
+  async function handleAddNote() {
+    if (!noteText.trim() || !user) return
+    setSubmittingNote(true)
+    const newNote = {
+      author: user.displayName || user.email || 'Unknown',
+      text: noteText.trim(),
+      createdAt: Date.now(),
+    }
+    const updated = [...notes, newNote]
+    await updateDoc(doc(db, 'problems', problem.id), { internalNotes: updated })
+    setNotes(updated)
+    setNoteText('')
+    onNoteAdded?.(problem.id, updated)
+    setSubmittingNote(false)
+  }
+
+  function timeAgo(ts: number) {
+    const s = Math.floor((Date.now() - ts) / 1000)
+    if (s < 60) return 'just now'
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+    return `${Math.floor(s / 86400)}d ago`
+  }
+
   const photos = problem.photos || []
 
   return (
@@ -109,7 +147,6 @@ export function ProblemDetail({ problem, onClose }: Props) {
         onClick={onClose}
       />
 
-      {/* Modal — shares layoutId with the card for the expand animation */}
       <div className="fixed inset-0 z-[301] flex items-center justify-center p-4 pointer-events-none">
         <motion.div
           layoutId={`problem-card-${problem.id}`}
@@ -119,19 +156,12 @@ export function ProblemDetail({ problem, onClose }: Props) {
           {/* Photos */}
           {photos.length > 0 && (
             <div className="relative h-52 bg-white/[0.04] flex-shrink-0 overflow-hidden">
-              <img
-                src={photos[photoIndex]}
-                alt={problem.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={photos[photoIndex]} alt={problem.title} className="w-full h-full object-cover" />
               {photos.length > 1 && (
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {photos.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setPhotoIndex(i)}
-                      className={`w-2 h-2 rounded-full transition-colors ${i === photoIndex ? 'bg-white' : 'bg-white/30'}`}
-                    />
+                    <button key={i} onClick={() => setPhotoIndex(i)}
+                      className={`w-2 h-2 rounded-full transition-colors ${i === photoIndex ? 'bg-white' : 'bg-white/30'}`} />
                   ))}
                 </div>
               )}
@@ -167,6 +197,37 @@ export function ProblemDetail({ problem, onClose }: Props) {
               </p>
             </div>
 
+            {/* Super user controls */}
+            {isSuperUser && (
+              <div className="bg-amber-500/[0.07] border border-amber-500/25 rounded-xl px-4 py-3">
+                <p className="text-amber-400/70 text-[0.65rem] font-semibold uppercase tracking-wider mb-2">🛡 Super User Controls</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => onEdit?.(problem)}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white/70 text-xs font-medium hover:text-white hover:bg-white/[0.10] transition-colors"
+                  >
+                    ✏️ Edit
+                  </button>
+                  {problem.claimedByTeam && (
+                    <button
+                      onClick={() => onUnclaim?.(problem.id)}
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white/70 text-xs font-medium hover:text-white hover:bg-white/[0.10] transition-colors"
+                    >
+                      ✕ Unclaim
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete "${problem.title}"? This cannot be undone.`)) onDelete?.(problem.id)
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             <div>
               <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Description</h3>
@@ -199,7 +260,7 @@ export function ProblemDetail({ problem, onClose }: Props) {
               </div>
             )}
 
-            {/* Upvote + claim */}
+            {/* Upvote */}
             <div className="flex items-center gap-3">
               <button
                 onClick={handleUpvote}
@@ -214,7 +275,47 @@ export function ProblemDetail({ problem, onClose }: Props) {
               </button>
             </div>
 
-            {/* Comments */}
+            {/* Internal notes — visible to claiming team or super user */}
+            {canSeeNotes && (
+              <div>
+                <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
+                  Team Notes <span className="normal-case font-normal text-white/25">(only visible to the claiming team)</span>
+                </h3>
+                {notes.length === 0 && (
+                  <p className="text-white/25 text-sm mb-3">No notes yet.</p>
+                )}
+                <div className="space-y-2 mb-3">
+                  {notes.map((n, i) => (
+                    <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
+                      <p className="text-white/75 text-sm leading-relaxed">{n.text}</p>
+                      <p className="text-white/30 text-xs mt-1">{n.author} · {timeAgo(n.createdAt)}</p>
+                    </div>
+                  ))}
+                </div>
+                {canAddNote ? (
+                  <div className="flex gap-2">
+                    <input
+                      value={noteText}
+                      onChange={e => setNoteText(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAddNote()}
+                      placeholder="Add a team note…"
+                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      onClick={handleAddNote}
+                      disabled={submittingNote || !noteText.trim()}
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
+                    >
+                      {submittingNote ? 'Saving…' : 'Add'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-white/25 text-xs">Notes are locked once a problem is solved.</p>
+                )}
+              </div>
+            )}
+
+            {/* Public comments */}
             <div>
               <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
                 Comments ({comments.length})
@@ -230,35 +331,33 @@ export function ProblemDetail({ problem, onClose }: Props) {
                   </div>
                 ))}
               </div>
-              {(
-                <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
+                <input
+                  value={anonName}
+                  onChange={e => setAnonName(e.target.value)}
+                  placeholder="Your name *"
+                  className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                />
+                <div className="flex gap-2">
                   <input
-                    value={anonName}
-                    onChange={e => setAnonName(e.target.value)}
-                    placeholder="Your name *"
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleComment()}
+                    placeholder="Add a comment…"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
                   />
-                  <div className="flex gap-2">
-                    <input
-                      value={commentText}
-                      onChange={e => setCommentText(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleComment()}
-                      placeholder="Add a comment…"
-                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
-                    />
-                    <button
-                      onClick={handleComment}
-                      disabled={submittingComment || !commentText.trim() || !anonName.trim()}
-                      className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
-                    >
-                      {submittingComment ? 'Posting…' : 'Post'}
-                    </button>
-                  </div>
-                  {!anonName.trim() && commentText.trim() && (
-                    <p className="text-amber-400/80 text-xs">Enter your name above to post.</p>
-                  )}
+                  <button
+                    onClick={handleComment}
+                    disabled={submittingComment || !commentText.trim() || !anonName.trim()}
+                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
+                  >
+                    {submittingComment ? 'Posting…' : 'Post'}
+                  </button>
                 </div>
-              )}
+                {!anonName.trim() && commentText.trim() && (
+                  <p className="text-amber-400/80 text-xs">Enter your name above to post.</p>
+                )}
+              </div>
             </div>
           </div>
 

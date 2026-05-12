@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import {
   collection, query, orderBy, onSnapshot,
-  doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc,
+  doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, deleteField,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
+import { ManageTeamsModal } from '@/components/ManageTeamsModal'
+import { EditProblemModal } from '@/components/EditProblemModal'
 import { AnimatePresence } from 'framer-motion'
 
 // ── Types ────────────────────────────────────────────────
@@ -46,6 +48,11 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   const [savingTeam, setSavingTeam] = useState(false)
   const [existingTeams, setExistingTeams] = useState<Team[]>([])
 
+  // Super user state
+  const [isSuperUser, setIsSuperUser] = useState(false)
+  const [manageTeamsOpen, setManageTeamsOpen] = useState(false)
+  const [editProblem, setEditProblem] = useState<Problem | null>(null)
+
   // Detail flyout + email modal
   const [detailProblem, setDetailProblem] = useState<Problem | null>(null)
   const [emailModal, setEmailModal] = useState<{ problem: Problem; type: 'intro' | 'update' | 'solved' } | null>(null)
@@ -55,6 +62,15 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { setUser(null); setTeam(null); setAuthView('signin'); return }
       setUser(u)
+      // Check superuser status
+      try {
+        const suSnap = await getDoc(doc(db, 'config', 'superusers'))
+        const emails: string[] = suSnap.exists() ? (suSnap.data()?.emails ?? []) : []
+        setIsSuperUser(emails.some((e: string) => typeof e === 'string' && e.trim().toLowerCase() === u.email?.trim().toLowerCase()))
+      } catch {
+        setIsSuperUser(false)
+      }
+
       try {
         const snap = await getDoc(doc(db, 'teams', u.uid))
         if (snap.exists()) {
@@ -202,6 +218,14 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           </div>
           {user && (
             <div className="flex items-center gap-3">
+              {isSuperUser && (
+                <button
+                  onClick={() => setManageTeamsOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/25 transition-colors"
+                >
+                  👥 Manage Teams
+                </button>
+              )}
               {team && (
                 <span className="text-xs px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary font-medium">
                   👥 {team.name}
@@ -350,6 +374,26 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             key={detailProblem.id}
             problem={detailProblem}
             onClose={() => setDetailProblem(null)}
+            isSuperUser={isSuperUser}
+            currentTeam={team}
+            user={user}
+            onEdit={setEditProblem}
+            onDelete={async (id) => {
+              await deleteDoc(doc(db, 'problems', id))
+              setDetailProblem(null)
+            }}
+            onUnclaim={async (id) => {
+              await updateDoc(doc(db, 'problems', id), {
+                status: 'new',
+                claimedByTeam: deleteField(),
+                claimedByUser: deleteField(),
+                claimedAt: deleteField(),
+              })
+              setDetailProblem(null)
+            }}
+            onNoteAdded={(id, notes) => {
+              setDetailProblem(prev => prev?.id === id ? { ...prev, internalNotes: notes } : prev)
+            }}
           />
         )}
       </AnimatePresence>
@@ -362,6 +406,26 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           user={user}
           team={team}
           onClose={() => setEmailModal(null)}
+        />
+      )}
+
+      {/* ── MANAGE TEAMS MODAL (super user only) ── */}
+      {manageTeamsOpen && (
+        <ManageTeamsModal
+          problems={problems}
+          onClose={() => setManageTeamsOpen(false)}
+        />
+      )}
+
+      {/* ── EDIT PROBLEM MODAL (super user only) ── */}
+      {editProblem && (
+        <EditProblemModal
+          problem={editProblem}
+          onClose={() => setEditProblem(null)}
+          onSaved={(updated) => {
+            setEditProblem(null)
+            setDetailProblem(prev => prev?.id === updated.id ? updated : prev)
+          }}
         />
       )}
     </div>
