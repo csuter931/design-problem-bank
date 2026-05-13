@@ -16,9 +16,11 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
 
-    // Teams: authenticated users can only read/write their own document
+    // Teams: any authenticated user can read (needed for team list / manage teams)
+    // Write/delete restricted to own document only
     match /teams/{userId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
 
   }
