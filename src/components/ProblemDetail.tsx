@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -80,6 +80,8 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
   const [notes, setNotes] = useState(problem.internalNotes ?? [])
   const [submittingNote, setSubmittingNote] = useState(false)
 
+  useEffect(() => { setNotes(problem.internalNotes ?? []) }, [problem.internalNotes])
+
   const status = problem.status || 'new'
   const canSeeNotes = isSuperUser || (!!currentTeam && currentTeam.name === problem.claimedByTeam)
   const canAddNote = canSeeNotes && (isSuperUser || status !== 'solved')
@@ -110,7 +112,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
   }
 
   async function handleAddNote() {
-    if (!noteText.trim() || !user) return
+    if (!canAddNote || !noteText.trim() || !user) return
     setSubmittingNote(true)
     const newNote = {
       author: user.displayName || user.email || 'Unknown',

@@ -60,7 +60,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   // Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) { setUser(null); setTeam(null); setAuthView('signin'); return }
+      if (!u) { setUser(null); setTeam(null); setIsSuperUser(false); setAuthView('signin'); return }
       setUser(u)
       // Check superuser status
       try {
@@ -379,17 +379,27 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             user={user}
             onEdit={setEditProblem}
             onDelete={async (id) => {
-              await deleteDoc(doc(db, 'problems', id))
-              setDetailProblem(null)
+              try {
+                await deleteDoc(doc(db, 'problems', id))
+                setDetailProblem(null)
+              } catch (e) {
+                console.error('Failed to delete problem:', e)
+                alert('Failed to delete problem. Please try again.')
+              }
             }}
             onUnclaim={async (id) => {
-              await updateDoc(doc(db, 'problems', id), {
-                status: 'new',
-                claimedByTeam: deleteField(),
-                claimedByUser: deleteField(),
-                claimedAt: deleteField(),
-              })
-              setDetailProblem(null)
+              try {
+                await updateDoc(doc(db, 'problems', id), {
+                  status: 'new',
+                  claimedByTeam: deleteField(),
+                  claimedByUser: deleteField(),
+                  claimedAt: deleteField(),
+                })
+                setDetailProblem(null)
+              } catch (e) {
+                console.error('Failed to unclaim problem:', e)
+                alert('Failed to unclaim problem. Please try again.')
+              }
             }}
             onNoteAdded={(id, notes) => {
               setDetailProblem(prev => prev?.id === id ? { ...prev, internalNotes: notes } : prev)

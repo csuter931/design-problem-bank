@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, deleteDoc, doc, query, where, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import type { Problem } from '@/components/ProblemDetail'
-
-interface TeamDoc {
-  docId: string
-  name: string
-  members: string
-  joinedAt?: number
-}
-
 interface TeamGroup {
   name: string
   memberCount: number
@@ -18,7 +9,7 @@ interface TeamGroup {
 
 export function ManageTeamsModal({ onClose, problems }: {
   onClose: () => void
-  problems: Problem[]
+  problems: { id: string; claimedByTeam?: string; status?: string }[]
 }) {
   const [teams, setTeams] = useState<TeamGroup[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,10 +29,10 @@ export function ManageTeamsModal({ onClose, problems }: {
     setError('')
     try {
       const snap = await getDocs(collection(db, 'teams'))
-      const docs = snap.docs.map(d => ({ docId: d.id, ...d.data() } as TeamDoc))
       const byName = new Map<string, number>()
-      docs.forEach(d => {
-        if (d.name) byName.set(d.name, (byName.get(d.name) ?? 0) + 1)
+      snap.docs.forEach(d => {
+        const name = d.data().name as string | undefined
+        if (name) byName.set(name, (byName.get(name) ?? 0) + 1)
       })
       const groups: TeamGroup[] = Array.from(byName.entries()).map(([name, memberCount]) => ({
         name,
@@ -63,18 +54,20 @@ export function ManageTeamsModal({ onClose, problems }: {
     if (!confirm(`Delete team "${teamName}"? Their claimed problems will return to Available.`)) return
     setDeletingTeam(teamName)
     try {
-      // Reset claimed problems
-      const claimed = problems.filter(p =>
-        p.claimedByTeam === teamName && (p.status === 'claimed' || p.status === 'inprogress')
-      )
-      await Promise.all(claimed.map(p =>
-        updateDoc(doc(db, 'problems', p.id), {
+      // Query Firestore directly to avoid stale prop snapshot
+      const claimedSnap = await getDocs(query(
+        collection(db, 'problems'),
+        where('claimedByTeam', '==', teamName)
+      ))
+      await Promise.all(claimedSnap.docs
+        .filter(d => ['claimed', 'inprogress'].includes(d.data().status))
+        .map(d => updateDoc(d.ref, {
           status: 'new',
           claimedByTeam: deleteField(),
           claimedByUser: deleteField(),
           claimedAt: deleteField(),
-        })
-      ))
+        }))
+      )
       // Delete all team docs with this name
       const teamSnap = await getDocs(query(collection(db, 'teams'), where('name', '==', teamName)))
       await Promise.all(teamSnap.docs.map(d => deleteDoc(d.ref)))

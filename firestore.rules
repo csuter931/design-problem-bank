@@ -8,9 +8,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Problems: fully public read/create/update, only authenticated can delete
+    // Problems: public read/create; update allowed if unauthenticated only when not touching internalNotes
     match /problems/{problemId} {
-      allow read, create, update: if true;
+      allow read, create: if true;
+      allow update: if request.auth != null ||
+        !('internalNotes' in request.resource.data.diff(resource.data).affectedKeys());
       allow delete: if request.auth != null;
     }
 

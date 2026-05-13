@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Problem } from '@/components/ProblemDetail'
 
@@ -43,7 +43,22 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
     if (!title.trim() || !description.trim()) { setError('Title and description are required.'); return }
     setSaving(true)
     setError('')
-    const updates: Partial<Problem> = {
+    const f = deleteField()
+    const firestoreUpdates: Record<string, unknown> = {
+      title: title.trim(),
+      description: description.trim(),
+      affects: affects.trim() || f,
+      where: where.trim() || f,
+      severity,
+      categories,
+      disciplines,
+      submitterName: submitterName.trim() || f,
+      submitterRole: submitterRole.trim() || f,
+      submitterContact: submitterContact.trim() || f,
+      workaround: workaround.trim() || f,
+      constraints: constraints.trim() || f,
+    }
+    const localUpdates: Partial<Problem> = {
       title: title.trim(),
       description: description.trim(),
       affects: affects.trim() || undefined,
@@ -58,8 +73,8 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
       constraints: constraints.trim() || undefined,
     }
     try {
-      await updateDoc(doc(db, 'problems', problem.id), updates as Record<string, unknown>)
-      onSaved({ ...problem, ...updates })
+      await updateDoc(doc(db, 'problems', problem.id), firestoreUpdates)
+      onSaved({ ...problem, ...localUpdates })
     } catch (e) {
       console.error('editProblem error:', e)
       setError('Failed to save. Try again.')
