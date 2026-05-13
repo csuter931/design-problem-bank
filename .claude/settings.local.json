@@ -18,7 +18,8 @@
       "Bash(python3 -:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(npm --version)",
-      "Bash(brew list:*)"
+      "Bash(brew list:*)",
+      "Bash(grep -iE \"\\(admin\\\\.html|index\\\\.html\\)$\")"
     ]
   }
 }
