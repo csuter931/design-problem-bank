@@ -203,7 +203,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
       <header className="sticky top-0 z-10 bg-[#0b0f1a]/90 backdrop-blur border-b border-white/[0.07] px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onBack} className="text-white/40 hover:text-white/80 text-sm transition-colors">
+            <button onClick={onBack} className="text-white/65 hover:text-white text-sm transition-colors">
               ← Back
             </button>
             <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                 <h1 className="font-bold text-sm text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   Student Dashboard
                 </h1>
-                <p className="text-xs text-white/35">Design Problem Bank</p>
+                <p className="text-xs text-white/60">Design Problem Bank</p>
               </div>
             </div>
           </div>
@@ -231,8 +231,8 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   👥 {team.name}
                 </span>
               )}
-              <span className="text-xs text-white/40 hidden sm:block">{user.email}</span>
-              <button onClick={handleSignOut} className="text-xs text-white/35 hover:text-white/70 transition-colors">
+              <span className="text-xs text-white/65 hidden sm:block">{user.email}</span>
+              <button onClick={handleSignOut} className="text-xs text-white/60 hover:text-white transition-colors">
                 Sign out
               </button>
             </div>
@@ -255,7 +255,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Student Sign In
               </h2>
-              <p className="text-white/45 text-sm leading-relaxed">
+              <p className="text-white/65 text-sm leading-relaxed">
                 Sign in with your school Google account to claim problems, track progress, and collaborate with your team.
               </p>
             </div>
@@ -301,7 +301,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-yellow-300 font-medium text-sm">You're a free agent</p>
-                  <p className="text-white/45 text-xs">Join or create a team to claim problems.</p>
+                  <p className="text-white/65 text-xs">Join or create a team to claim problems.</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setTeamSetupOpen(true)} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
@@ -317,7 +317,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                 <div>
                   <p className="text-white font-semibold text-sm">👥 {team.name}</p>
                 </div>
-                <button onClick={handleLeaveTeam} className="text-xs text-white/30 hover:text-red-400 transition-colors">
+                <button onClick={handleLeaveTeam} className="text-xs text-white/55 hover:text-red-400 transition-colors">
                   Leave team
                 </button>
               </div>
@@ -328,7 +328,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               {TABS.map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
-                    tab === t.id ? 'bg-primary text-white shadow' : 'text-white/45 hover:text-white/70'
+                    tab === t.id ? 'bg-primary text-white shadow' : 'text-white/65 hover:text-white'
                   }`}>
                   {t.label}
                   <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-white/20' : 'bg-white/[0.08]'}`}>
@@ -484,8 +484,8 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
             )}
           </div>
           <p className="text-white text-sm font-semibold leading-snug mb-1 truncate">{problem.title}</p>
-          <p className="text-white/45 text-xs leading-relaxed line-clamp-2">{problem.description}</p>
-          <div className="flex items-center gap-3 mt-2 text-white/30 text-xs">
+          <p className="text-white/65 text-xs leading-relaxed line-clamp-2">{problem.description}</p>
+          <div className="flex items-center gap-3 mt-2 text-white/55 text-xs">
             <span>by {problem.submitterName || 'Anonymous'}</span>
             <span>▲ {problem.upvotes || 0}</span>
           </div>
@@ -497,27 +497,27 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         {context === 'available' && (problem.status || 'new') === 'new' && (
           team
             ? <button onClick={() => onClaim(problem.id)} className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors">🙋 Claim</button>
-            : <span className="text-xs text-white/25">Join a team to claim</span>
+            : <span className="text-xs text-white/50">Join a team to claim</span>
         )}
         {context === 'mine' && isMine && status === 'claimed' && (
           <>
             <button onClick={() => onUpdateStatus(problem.id, 'inprogress')} className="px-4 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors">▶ Start Work</button>
-            <button onClick={() => onEmailTemplate('intro')} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">✉ Intro Email</button>
-            <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">📝 Notes</button>
+            <button onClick={() => onEmailTemplate('intro')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Intro Email</button>
+            <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">📝 Notes</button>
           </>
         )}
         {context === 'mine' && isMine && status === 'inprogress' && (
           <>
             <button onClick={() => onUpdateStatus(problem.id, 'solved')} className="px-4 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-medium hover:bg-purple-500/30 transition-colors">✅ Mark Solved</button>
-            <button onClick={() => onEmailTemplate('update')} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">✉ Progress Update</button>
-            <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">📝 Notes</button>
+            <button onClick={() => onEmailTemplate('update')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Progress Update</button>
+            <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">📝 Notes</button>
           </>
         )}
         {context === 'solved' && isMine && (
-          <button onClick={() => onEmailTemplate('solved')} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">✉ Share Results</button>
+          <button onClick={() => onEmailTemplate('solved')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Share Results</button>
         )}
         {(context === 'all' || context === 'solved') && (
-          <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.12] text-white/50 text-xs hover:text-white/80 transition-colors">View details →</button>
+          <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">View details →</button>
         )}
       </div>
     </div>
@@ -550,15 +550,15 @@ function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, o
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
           <div>
             <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>Set up your team</h2>
-            <p className="text-white/40 text-xs mt-0.5">Signed in as {user.email}</p>
+            <p className="text-white/65 text-xs mt-0.5">Signed in as {user.email}</p>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
+          <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
           <div className="flex gap-2">
             {(['create', 'join'] as const).map(m => (
               <button key={m} onClick={() => onSetMode(m)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${teamMode === m ? 'bg-primary border-primary text-white' : 'border-white/[0.15] text-white/50 hover:text-white/80'}`}>
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${teamMode === m ? 'bg-primary border-primary text-white' : 'border-white/[0.15] text-white/65 hover:text-white'}`}>
                 {m === 'create' ? '➕ Create Team' : '👥 Join Team'}
               </button>
             ))}
@@ -580,12 +580,12 @@ function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, o
           {teamMode === 'join' && (
             <div className="flex flex-col gap-2">
               {existingTeams.length === 0
-                ? <p className="text-white/30 text-sm text-center py-6">No existing teams yet — create one!</p>
+                ? <p className="text-white/55 text-sm text-center py-6">No existing teams yet — create one!</p>
                 : existingTeams.map(t => (
                   <button key={t.name} onClick={() => onJoin(t)} disabled={savingTeam}
                     className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 transition-all disabled:opacity-50">
                     <p className="text-white text-sm font-medium">{t.name}</p>
-                    <span className="text-white/30 text-sm">Join →</span>
+                    <span className="text-white/60 text-sm">Join →</span>
                   </button>
                 ))
               }
@@ -700,9 +700,9 @@ ${contactEmail}`,
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
           <div>
             <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>{titles[type]}</h2>
-            <p className="text-white/40 text-xs mt-0.5">Edit and send from your school email to {problem.submitterName || 'the submitter'}</p>
+            <p className="text-white/65 text-xs mt-0.5">Edit and send from your school email to {problem.submitterName || 'the submitter'}</p>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
+          <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
           <div>
@@ -715,15 +715,15 @@ ${contactEmail}`,
           </div>
           <div>
             <label className={labelCls}>Message</label>
-            <p className="text-white/30 text-xs mb-1.5">Edit anything in [BRACKETS] before sending.</p>
+            <p className="text-white/55 text-xs mb-1.5">Edit anything in [BRACKETS] before sending.</p>
             <textarea value={body} onChange={e => setBody(e.target.value)} rows={12}
               className={`${inputCls} resize-none font-mono text-xs leading-relaxed`} />
           </div>
         </div>
         <div className="flex items-center justify-between px-6 py-4 border-t border-white/[0.08]">
-          <button onClick={onClose} className="text-sm text-white/40 hover:text-white/70 transition-colors">Cancel</button>
+          <button onClick={onClose} className="text-sm text-white/65 hover:text-white transition-colors">Cancel</button>
           <div className="flex gap-2">
-            <button onClick={copyToClipboard} className="px-4 py-2 rounded-xl border border-white/[0.15] text-white/60 text-sm hover:text-white/90 transition-colors">
+            <button onClick={copyToClipboard} className="px-4 py-2 rounded-xl border border-white/[0.15] text-white/70 text-sm hover:text-white transition-colors">
               {copied ? '✓ Copied!' : '📋 Copy'}
             </button>
             <button onClick={openMailClient} className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
@@ -741,8 +741,8 @@ function EmptyState({ icon, title, desc }: { icon: string; title: string; desc: 
   return (
     <div className="text-center py-16 flex flex-col items-center gap-3">
       <span className="text-4xl">{icon}</span>
-      <h3 className="text-white/60 font-semibold">{title}</h3>
-      {desc && <p className="text-white/30 text-sm">{desc}</p>}
+      <h3 className="text-white/70 font-semibold">{title}</h3>
+      {desc && <p className="text-white/55 text-sm">{desc}</p>}
     </div>
   )
 }

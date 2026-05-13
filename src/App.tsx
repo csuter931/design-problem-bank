@@ -85,12 +85,12 @@ function ProblemCard({ problem, onSelect }: {
               {STATUS_LABELS[status]}
             </span>
             {problem.severity ? (
-              <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+              <span className="text-[0.7rem] text-white/70 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
                 {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
               </span>
             ) : null}
             {problem.claimedByTeam && (
-              <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+              <span className="text-[0.7rem] text-white/70 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
                 👥 {problem.claimedByTeam}
               </span>
             )}
@@ -98,25 +98,25 @@ function ProblemCard({ problem, onSelect }: {
           <h3 className="font-bold text-white text-base leading-snug mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {problem.title}
           </h3>
-          <p className="text-white/50 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
+          <p className="text-white/65 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
             {problem.description}
           </p>
           <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
-            <span className="text-white/35 text-xs">by {problem.submitterName || 'Anonymous'}</span>
+            <span className="text-white/60 text-xs">by {problem.submitterName || 'Anonymous'}</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleUpvote}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
                   voted
-                    ? 'text-primary bg-primary/10 cursor-default'
-                    : 'text-white/35 hover:text-white/70 hover:bg-white/[0.06]'
+                    ? 'text-white bg-emerald-500/30 border border-emerald-500/40 cursor-default'
+                    : 'text-white/60 hover:text-white/80 hover:bg-white/[0.06]'
                 }`}
               >
                 ▲ {localUpvotes}
               </button>
               <button
                 onClick={handleCommentClick}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/60 hover:text-white/80 hover:bg-white/[0.06] transition-all"
               >
                 💬 {(problem.comments || []).length}
               </button>
@@ -168,9 +168,9 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
         <div className="flex items-start justify-between">
           <div>
             <p className="text-white text-sm font-semibold leading-snug line-clamp-1">{problem.title}</p>
-            <p className="text-white/35 text-xs mt-0.5">Leave a comment</p>
+            <p className="text-white/60 text-xs mt-0.5">Leave a comment</p>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors ml-2">✕</button>
+          <button onClick={onClose} className="text-white/55 hover:text-white/80 transition-colors ml-2">✕</button>
         </div>
         {done ? (
           <p className="text-emerald-400 text-sm text-center py-2">✓ Comment posted!</p>
@@ -277,10 +277,10 @@ function App() {
               <h1 className="font-bold text-lg tracking-tight text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Design Problem Bank
               </h1>
-              <p className="text-xs text-white/40 mt-0.5">Real problems. Creative solutions.</p>
+              <p className="text-xs text-white/65 mt-0.5">Real problems. Creative solutions.</p>
             </div>
           </div>
-          <div className="flex items-center gap-5 text-sm text-white/45">
+          <div className="flex items-center gap-5 text-sm text-white/65">
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
             <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
             <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
@@ -342,7 +342,7 @@ function App() {
                 className={`px-4 py-[0.4rem] rounded-[11px] text-sm font-medium border transition-all ${
                   filter === f.value
                     ? 'bg-primary border-primary text-white'
-                    : 'bg-white/[0.06] border-white/[0.15] text-white/65 hover:bg-white/[0.12] hover:text-white hover:border-white/25'
+                    : 'bg-white/[0.06] border-white/[0.15] text-white/75 hover:bg-white/[0.12] hover:text-white hover:border-white/25'
                 }`}
               >
                 {f.label}
