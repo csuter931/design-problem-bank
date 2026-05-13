@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, getDocs, deleteDoc, doc, query, where, updateDoc, deleteField } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, query, where, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 interface TeamGroup {
   name: string
