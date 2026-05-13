@@ -2,18 +2,19 @@
 
 Last updated: 2026-05-13
 
-## Bugs to Fix
-- [ ] **Student dashboard tab counts** — verify Available / My Team's / Solved / All counts are correct after removing sample problems
+## Before User Launch
+- [ ] **Restrict sign-in to @dawsonschool.org** — one-liner: `provider.setCustomParameters({ hd: 'dawsonschool.org' })` in StudentDashboard.tsx; prevents random Google accounts from creating teams
+- [ ] **End-to-end submission wizard check** — step through: fill out form → upload photo → submit → confirm problem appears in gallery with correct data
+- [ ] **Merge react-app → main** — make main the canonical branch, update deploy workflow to trigger on main, delete react-app branch
 
-## Things to Test
-- [ ] Test full problem submission wizard end-to-end (public page → Cloudinary photo → Firestore)
+## Things to Test / Verify
+- [ ] **Student dashboard tab counts** — verify Available / My Team's / Solved / All counts are correct after removing sample problems
 - [ ] Confirm "My Team's Problems" tab hides/shows correctly when joining/leaving teams
 - [ ] Verify notes visibility is correct for different user types (super user, claiming team, other teams)
 - [ ] Test note locking on solved problems
 
 ## Features to Brainstorm
 - [ ] Post-claim project management — tools teams need after claiming (task tracking, milestones, file sharing)
-- [ ] Restrict Google sign-in to `@dawsonschool.org` emails only (`provider.setCustomParameters({ hd: 'dawsonschool.org' })`)
 
 ## Future Ideas (not urgent)
 - Consider end-of-year archiving of claimed/solved problems
