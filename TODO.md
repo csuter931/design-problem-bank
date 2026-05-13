@@ -5,7 +5,8 @@ Last updated: 2026-05-13
 ## Before User Launch
 - [ ] **Restrict sign-in to @dawsonschool.org** — one-liner: `provider.setCustomParameters({ hd: 'dawsonschool.org' })` in StudentDashboard.tsx; prevents random Google accounts from creating teams
 - [ ] **End-to-end submission wizard check** — step through: fill out form → upload photo → submit → confirm problem appears in gallery with correct data
-- [ ] **Merge react-app → main** — make main the canonical branch, update deploy workflow to trigger on main, delete react-app branch
+- [ ] **Clean up branches** — delete stale `dev` branch (pre-React era, no longer relevant); delete `react-app` branch after merging to main
+- [ ] **Merge react-app → main** — open PR on GitHub, merge, then update `deploy.yml` to trigger on `main` instead of `react-app`
 
 ## Things to Test / Verify
 - [ ] **Student dashboard tab counts** — verify Available / My Team's / Solved / All counts are correct after removing sample problems
@@ -15,6 +16,12 @@ Last updated: 2026-05-13
 
 ## Features to Brainstorm
 - [ ] Post-claim project management — tools teams need after claiming (task tracking, milestones, file sharing)
+
+## Ongoing Development Workflow (once on main)
+- All future work happens on a `dev` branch cut from main: `git checkout -b dev`
+- Test changes locally with `npm run dev` (runs at localhost:5173, main stays live and untouched)
+- When happy with changes, open a PR from dev → main on GitHub and merge — site auto-deploys in ~30 seconds
+- Add Netlify deploy previews if you ever need to share a work-in-progress URL with someone before merging
 
 ## Future Ideas (not urgent)
 - Consider end-of-year archiving of claimed/solved problems
