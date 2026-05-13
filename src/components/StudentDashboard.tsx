@@ -473,12 +473,12 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
               {STATUS_LABELS[status]}
             </span>
             {problem.severity ? (
-              <span className="text-[0.65rem] text-white/45 px-1.5 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+              <span className="text-[0.65rem] text-white/75 px-1.5 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
                 {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
               </span>
             ) : null}
             {problem.claimedByTeam && (
-              <span className="text-[0.65rem] text-white/45 px-1.5 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+              <span className="text-[0.65rem] text-white/75 px-1.5 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
                 👥 {problem.claimedByTeam}
               </span>
             )}

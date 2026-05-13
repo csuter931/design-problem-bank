@@ -180,12 +180,12 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   {STATUS_LABELS[status]}
                 </span>
                 {problem.severity ? (
-                  <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                  <span className="text-[0.7rem] text-white/75 px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
                     {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
                   </span>
                 ) : null}
                 {problem.claimedByTeam && (
-                  <span className="text-[0.7rem] text-white/50 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                  <span className="text-[0.7rem] text-white/75 px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
                     👥 {problem.claimedByTeam}
                   </span>
                 )}
@@ -254,10 +254,10 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             {((problem.categories?.length || 0) > 0 || (problem.disciplines?.length || 0) > 0) && (
               <div className="flex flex-wrap gap-1.5">
                 {problem.categories?.map(c => (
-                  <span key={c} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-white/50 capitalize">{c}</span>
+                  <span key={c} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.20] text-white/80 capitalize">{c}</span>
                 ))}
                 {problem.disciplines?.map(d => (
-                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary/80 capitalize">{d.replace(/-/g, ' ')}</span>
+                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-primary/20 border border-primary/45 text-primary capitalize">{d.replace(/-/g, ' ')}</span>
                 ))}
               </div>
             )}
@@ -270,7 +270,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
                     ? 'bg-primary/30 border-primary/60 text-white cursor-default'
-                    : 'border-white/[0.12] text-white/50 hover:text-white hover:border-white/25'
+                    : 'border-white/[0.22] text-white/70 hover:text-white hover:border-white/40'
                 } disabled:opacity-40`}
               >
                 ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
