@@ -193,7 +193,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               <h2 className="text-xl font-bold text-white leading-snug" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {problem.title}
               </h2>
-              <p className="text-white/35 text-xs mt-1">
+              <p className="text-white/60 text-xs mt-1">
                 Submitted by {problem.submitterName || 'Anonymous'}
                 {problem.submitterRole && ` · ${problem.submitterRole}`}
               </p>
@@ -232,7 +232,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
 
             {/* Description */}
             <div>
-              <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Description</h3>
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-1.5">Description</h3>
               <p className="text-white/75 text-sm leading-relaxed">{problem.description}</p>
             </div>
 
@@ -269,7 +269,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                 disabled={voted}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 cursor-default'
+                    ? 'bg-emerald-500/25 border-emerald-500/50 text-white cursor-default'
                     : 'border-white/[0.25] text-white/75 hover:text-white hover:border-white/40'
                 } disabled:opacity-40`}
               >
@@ -280,17 +280,17 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             {/* Internal notes — visible to claiming team or super user */}
             {canSeeNotes && (
               <div>
-                <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
-                  Team Notes <span className="normal-case font-normal text-white/25">(only visible to the claiming team)</span>
+                <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                  Team Notes <span className="normal-case font-normal text-white/50">(only visible to the claiming team)</span>
                 </h3>
                 {notes.length === 0 && (
-                  <p className="text-white/25 text-sm mb-3">No notes yet.</p>
+                  <p className="text-white/55 text-sm mb-3">No notes yet.</p>
                 )}
                 <div className="space-y-2 mb-3">
                   {notes.map((n, i) => (
                     <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
                       <p className="text-white/75 text-sm leading-relaxed">{n.text}</p>
-                      <p className="text-white/30 text-xs mt-1">{n.author} · {timeAgo(n.createdAt)}</p>
+                      <p className="text-white/55 text-xs mt-1">{n.author} · {timeAgo(n.createdAt)}</p>
                     </div>
                   ))}
                 </div>
@@ -312,24 +312,24 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     </button>
                   </div>
                 ) : (
-                  <p className="text-white/25 text-xs">Notes are locked once a problem is solved.</p>
+                  <p className="text-white/55 text-xs">Notes are locked once a problem is solved.</p>
                 )}
               </div>
             )}
 
             {/* Public comments */}
             <div>
-              <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
                 Comments ({comments.length})
               </h3>
               {comments.length === 0 && (
-                <p className="text-white/25 text-sm">No comments yet.</p>
+                <p className="text-white/55 text-sm">No comments yet.</p>
               )}
               <div className="space-y-3 mb-4">
                 {comments.map((c, i) => (
                   <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
                     <p className="text-white/75 text-sm leading-relaxed">{c.text}</p>
-                    <p className="text-white/30 text-xs mt-1">{c.author}</p>
+                    <p className="text-white/55 text-xs mt-1">{c.author}</p>
                   </div>
                 ))}
               </div>
@@ -365,7 +365,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-white/[0.08] flex justify-end">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-white/40 hover:text-white/70 transition-colors">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-white/65 hover:text-white transition-colors">
               Close
             </button>
           </div>
@@ -378,7 +378,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-3 py-2.5">
-      <p className="text-white/35 text-[0.65rem] uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-white/60 text-[0.65rem] uppercase tracking-wider mb-0.5">{label}</p>
       <p className="text-white/75 text-sm">{value}</p>
     </div>
   )
