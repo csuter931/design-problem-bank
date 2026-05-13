@@ -377,6 +377,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             isSuperUser={isSuperUser}
             currentTeam={team}
             user={user}
+            onClaim={claimProblem}
             onEdit={setEditProblem}
             onDelete={async (id) => {
               try {

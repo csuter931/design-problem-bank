@@ -58,13 +58,14 @@ interface Props {
   isSuperUser?: boolean
   currentTeam?: { name: string; members: string; joinedAt?: number } | null
   user?: import('firebase/auth').User | null
+  onClaim?: (id: string) => void
   onEdit?: (p: Problem) => void
   onDelete?: (id: string) => void
   onUnclaim?: (id: string) => void
   onNoteAdded?: (id: string, notes: Array<{ author: string; text: string; createdAt: number }>) => void
 }
 
-export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onEdit, onDelete, onUnclaim, onNoteAdded }: Props) {
+export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim, onNoteAdded }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
@@ -262,7 +263,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               </div>
             )}
 
-            {/* Upvote */}
+            {/* Upvote + Claim */}
             <div className="flex items-center gap-3">
               <button
                 onClick={handleUpvote}
@@ -275,6 +276,17 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               >
                 ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
               </button>
+              {onClaim && currentTeam && (problem.status || 'new') === 'new' && (
+                <button
+                  onClick={() => { onClaim(problem.id); onClose() }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary border border-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  🙋 Claim for {currentTeam.name}
+                </button>
+              )}
+              {onClaim && !currentTeam && (problem.status || 'new') === 'new' && (
+                <span className="text-white/50 text-xs">Join a team to claim this problem.</span>
+              )}
             </div>
 
             {/* Internal notes — visible to claiming team or super user */}
