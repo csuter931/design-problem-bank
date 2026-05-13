@@ -180,12 +180,12 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   {STATUS_LABELS[status]}
                 </span>
                 {problem.severity ? (
-                  <span className="text-[0.7rem] text-white/75 px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
+                  <span className="text-[0.7rem] text-white/90 px-2 py-0.5 rounded-full bg-white/[0.12] border border-white/[0.28]">
                     {SEVERITY_EMOJI[problem.severity]} {SEVERITY_LABEL[problem.severity]}
                   </span>
                 ) : null}
                 {problem.claimedByTeam && (
-                  <span className="text-[0.7rem] text-white/75 px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.18]">
+                  <span className="text-[0.7rem] text-white/90 px-2 py-0.5 rounded-full bg-white/[0.12] border border-white/[0.28]">
                     👥 {problem.claimedByTeam}
                   </span>
                 )}
@@ -254,10 +254,10 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             {((problem.categories?.length || 0) > 0 || (problem.disciplines?.length || 0) > 0) && (
               <div className="flex flex-wrap gap-1.5">
                 {problem.categories?.map(c => (
-                  <span key={c} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-white/[0.10] border border-white/[0.20] text-white/80 capitalize">{c}</span>
+                  <span key={c} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-white/[0.12] border border-white/[0.28] text-white/90 capitalize">{c}</span>
                 ))}
                 {problem.disciplines?.map(d => (
-                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-primary/20 border border-primary/45 text-primary capitalize">{d.replace(/-/g, ' ')}</span>
+                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-indigo-500/25 border border-indigo-400/50 text-indigo-200 capitalize">{d.replace(/-/g, ' ')}</span>
                 ))}
               </div>
             )}
@@ -269,8 +269,8 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                 disabled={voted}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
-                    ? 'bg-primary/30 border-primary/60 text-white cursor-default'
-                    : 'border-white/[0.22] text-white/70 hover:text-white hover:border-white/40'
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 cursor-default'
+                    : 'border-white/[0.25] text-white/75 hover:text-white hover:border-white/40'
                 } disabled:opacity-40`}
               >
                 ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
