@@ -262,14 +262,14 @@ export function SubmitWizard({ onClose }: WizardProps) {
                     </div>
                     <div>
                       <label className={labelCls}>How often?</label>
-                      <select value={frequency} onChange={e => setFrequency(e.target.value)} className={`${inputCls()} bg-[#131926]`}>
-                        <option value="">Select…</option>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">A few times a week</option>
-                        <option value="monthly">A few times a month</option>
-                        <option value="occasionally">Occasionally</option>
-                        <option value="seasonal">Seasonally</option>
-                        <option value="once">One-time event</option>
+                      <select value={frequency} onChange={e => setFrequency(e.target.value)} className="w-full px-3 py-2.5 rounded-xl bg-[#131926] border border-white/[0.12] text-white text-sm focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
+                        <option value="" className="bg-[#131926] text-white">Select…</option>
+                        <option value="daily" className="bg-[#131926] text-white">Daily</option>
+                        <option value="weekly" className="bg-[#131926] text-white">A few times a week</option>
+                        <option value="monthly" className="bg-[#131926] text-white">A few times a month</option>
+                        <option value="occasionally" className="bg-[#131926] text-white">Occasionally</option>
+                        <option value="seasonal" className="bg-[#131926] text-white">Seasonally</option>
+                        <option value="once" className="bg-[#131926] text-white">One-time event</option>
                       </select>
                     </div>
                   </div>

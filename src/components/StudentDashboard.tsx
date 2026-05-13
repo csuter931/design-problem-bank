@@ -457,7 +457,7 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/[0.14] transition-colors">
-      <div className="flex gap-4 p-4">
+      <div className="flex gap-4 p-4 cursor-pointer" onClick={() => onViewDetail(problem)}>
         {/* Thumbnail */}
         <div className="w-20 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-white/[0.04] flex items-center justify-center">
           {problem.photos?.[0]
@@ -488,9 +488,6 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
           <div className="flex items-center gap-3 mt-2 text-white/30 text-xs">
             <span>by {problem.submitterName || 'Anonymous'}</span>
             <span>▲ {problem.upvotes || 0}</span>
-            <button onClick={() => onViewDetail(problem)} className="text-primary/70 hover:text-primary transition-colors">
-              View details →
-            </button>
           </div>
         </div>
       </div>

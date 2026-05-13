@@ -269,7 +269,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                 disabled={voted}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                   voted
-                    ? 'bg-primary/20 border-primary/40 text-primary cursor-default'
+                    ? 'bg-primary/30 border-primary/60 text-white cursor-default'
                     : 'border-white/[0.12] text-white/50 hover:text-white hover:border-white/25'
                 } disabled:opacity-40`}
               >
