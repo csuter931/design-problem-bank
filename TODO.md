@@ -28,7 +28,7 @@ Last updated: 2026-05-13
 - [x] **ManageTeamsModal** — lists teams with member count and active problem count; delete releases claimed problems back to Available
 - [x] **EditProblemModal** — full edit form for all problem fields; clears optional fields with `deleteField()`
 - [x] **Delete admin.html** — legacy standalone page removed; all functionality lives in the React app
-- [x] **Claim button in detail modal** — teams can read the full problem detail and claim it in one step
+- [x] **Claim button in detail modal** — teams can read the full problem detail and claim it in one step; Claim button in footer, Close on left
 - [x] **Global contrast lift** — all secondary text raised from /25–/50 range to /50–/70 across App.tsx, StudentDashboard.tsx, ProblemDetail.tsx
 - [x] **Upvote voted state** — fixed from dark navy (invisible) to white text on green background
 - [x] **Card click opens detail modal** — whole card is clickable, removed separate "View details" button
