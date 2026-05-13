@@ -276,17 +276,6 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               >
                 ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
               </button>
-              {onClaim && currentTeam && (problem.status || 'new') === 'new' && (
-                <button
-                  onClick={() => { onClaim(problem.id); onClose() }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary border border-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  🙋 Claim for {currentTeam.name}
-                </button>
-              )}
-              {onClaim && !currentTeam && (problem.status || 'new') === 'new' && (
-                <span className="text-white/50 text-xs">Join a team to claim this problem.</span>
-              )}
             </div>
 
             {/* Internal notes — visible to claiming team or super user */}
@@ -376,10 +365,22 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-white/[0.08] flex justify-end">
+          <div className="px-6 py-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
             <button onClick={onClose} className="px-4 py-2 text-sm text-white/65 hover:text-white transition-colors">
               Close
             </button>
+            {onClaim && (problem.status || 'new') === 'new' && (
+              currentTeam ? (
+                <button
+                  onClick={() => { onClaim(problem.id); onClose() }}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  🙋 Claim for {currentTeam.name}
+                </button>
+              ) : (
+                <span className="text-white/50 text-xs">Join a team to claim this problem.</span>
+              )
+            )}
           </div>
         </motion.div>
       </div>
