@@ -67,6 +67,7 @@ interface Props {
 
 export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim, onNoteAdded }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
   const [commentText, setCommentText] = useState('')
@@ -164,7 +165,12 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
           {/* Photos */}
           {photos.length > 0 && (
             <div className="relative flex-shrink-0 bg-black/30">
-              <img src={photos[photoIndex]} alt={problem.title} className="w-full max-h-72 object-contain" />
+              <img
+                src={photos[photoIndex]}
+                alt={problem.title}
+                className="w-full max-h-72 object-contain cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
+              />
               {photos.length > 1 && (
                 <>
                   <button
@@ -402,6 +408,40 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
           </div>
         </motion.div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[500] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors text-lg"
+            onClick={() => setLightboxOpen(false)}
+          >✕</button>
+          {photos.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition-colors"
+                onClick={e => { e.stopPropagation(); setPhotoIndex(i => (i - 1 + photos.length) % photos.length) }}
+              >‹</button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition-colors"
+                onClick={e => { e.stopPropagation(); setPhotoIndex(i => (i + 1) % photos.length) }}
+              >›</button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+                {photoIndex + 1} / {photos.length}
+              </div>
+            </>
+          )}
+          <img
+            src={photos[photoIndex]}
+            alt={problem.title}
+            className="max-w-full max-h-full object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   )
 }
