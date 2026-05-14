@@ -1,6 +1,6 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-05-13
+Last updated: 2026-05-14
 
 ## Before User Launch
 - [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx and StudentPortal.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
@@ -34,6 +34,10 @@ Last updated: 2026-05-13
 
 ## Completed
 
+- [x] **Modal scroll lock** — `overscroll-y-contain` + `document.body.overflow = hidden` applied to all 6 modals; background no longer scrolls when scrolling inside a modal
+- [x] **Photo gallery arrows** — prev/next buttons and photo count badge (1/3) added to ProblemDetail carousel
+- [x] **Full image display** — switched from fixed-height `object-cover` to `object-contain` so photos are never cropped in the detail modal
+- [x] **Lightbox** — clicking a photo in the detail modal opens a fullscreen overlay; carousel navigation works inside the lightbox; click outside or ✕ to close
 - [x] **Super user controls in React dashboard** — Manage Teams button, Edit/Delete/Unclaim on any problem, notes on solved problems; all gated by `config/superusers` Firestore doc
 - [x] **ManageTeamsModal** — lists teams with member count and active problem count; delete releases claimed problems back to Available
 - [x] **EditProblemModal** — full edit form for all problem fields; clears optional fields with `deleteField()`
