@@ -163,8 +163,8 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
         >
           {/* Photos */}
           {photos.length > 0 && (
-            <div className="relative h-52 bg-white/[0.04] flex-shrink-0 overflow-hidden">
-              <img src={photos[photoIndex]} alt={problem.title} className="w-full h-full object-cover" />
+            <div className="relative flex-shrink-0 bg-black/30">
+              <img src={photos[photoIndex]} alt={problem.title} className="w-full max-h-72 object-contain" />
               {photos.length > 1 && (
                 <>
                   <button
