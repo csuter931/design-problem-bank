@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -51,6 +51,11 @@ export function SubmitWizard({ onClose }: WizardProps) {
 
   // Errors
   const [errors, setErrors] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
 
   function addPhotos(files: FileList | null) {
     if (!files) return
@@ -183,7 +188,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+            <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 space-y-4">
 
               {step === 1 && (
                 <>

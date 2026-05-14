@@ -83,6 +83,11 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
 
   useEffect(() => { setNotes(problem.internalNotes ?? []) }, [problem.internalNotes])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   const status = problem.status || 'new'
   const canSeeNotes = isSuperUser || (!!currentTeam && currentTeam.name === problem.claimedByTeam)
   const canAddNote = canSeeNotes && (isSuperUser || status !== 'solved')
@@ -161,18 +166,31 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             <div className="relative h-52 bg-white/[0.04] flex-shrink-0 overflow-hidden">
               <img src={photos[photoIndex]} alt={problem.title} className="w-full h-full object-cover" />
               {photos.length > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {photos.map((_, i) => (
-                    <button key={i} onClick={() => setPhotoIndex(i)}
-                      className={`w-2 h-2 rounded-full transition-colors ${i === photoIndex ? 'bg-white' : 'bg-white/30'}`} />
-                  ))}
-                </div>
+                <>
+                  <button
+                    onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center hover:bg-black/70 transition-colors"
+                  >‹</button>
+                  <button
+                    onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center hover:bg-black/70 transition-colors"
+                  >›</button>
+                  <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                    {photoIndex + 1} / {photos.length}
+                  </div>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {photos.map((_, i) => (
+                      <button key={i} onClick={() => setPhotoIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-colors ${i === photoIndex ? 'bg-white' : 'bg-white/30'}`} />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
 
           {/* Scrollable body */}
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+          <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 space-y-5">
 
             {/* Title + badges */}
             <div>

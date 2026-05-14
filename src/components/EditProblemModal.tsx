@@ -35,6 +35,11 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   function toggleTag(list: string[], setList: (v: string[]) => void, val: string) {
     setList(list.includes(val) ? list.filter(x => x !== val) : [...list, val])
   }
@@ -104,7 +109,7 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
           <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
+        <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 flex flex-col gap-4">
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div>

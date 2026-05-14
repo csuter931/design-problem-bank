@@ -22,6 +22,11 @@ export function ManageTeamsModal({ onClose, problems }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   useEffect(() => { loadTeams() }, [])
 
   async function loadTeams() {
@@ -93,7 +98,7 @@ export function ManageTeamsModal({ onClose, problems }: {
           <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-6 py-5">
+        <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5">
           {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
           {loading ? (
             <p className="text-white/30 text-sm text-center py-8">Loading teams…</p>

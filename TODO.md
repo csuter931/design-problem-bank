@@ -3,7 +3,7 @@
 Last updated: 2026-05-13
 
 ## Before User Launch
-- [ ] **Restrict sign-in to @dawsonschool.org** — one-liner: `provider.setCustomParameters({ hd: 'dawsonschool.org' })` in StudentDashboard.tsx; prevents random Google accounts from creating teams
+- [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx and StudentPortal.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
 - [ ] **End-to-end submission wizard check** — step through: fill out form → upload photo → submit → confirm problem appears in gallery with correct data
 - [ ] **Clean up branches** — delete stale `dev` branch (pre-React era, no longer relevant); delete `react-app` branch after merging to main
 - [ ] **Merge react-app → main** — open PR on GitHub, merge, then update `deploy.yml` to trigger on `main` instead of `react-app`
@@ -24,6 +24,8 @@ Last updated: 2026-05-13
 - Add Netlify deploy previews if you ever need to share a work-in-progress URL with someone before merging
 
 ## Future Ideas (not urgent)
+- **Expand sign-in beyond Dawson domains** — if the app ever grows past Dawson, update the domain allowlist in `handleSignIn` in StudentDashboard.tsx and StudentPortal.tsx (currently hardcoded to @dawsonschool.org and @dawsonstudents.org) and decide on a new access-control strategy
+
 - Consider end-of-year archiving of claimed/solved problems
 - Polish UI/UX based on real student usage feedback
 - Add more super user capabilities as the site grows

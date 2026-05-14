@@ -114,7 +114,14 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     setSignInError('')
     localStorage.setItem('reopenStudentPortal', String(Date.now()))
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider())
+      const result = await signInWithPopup(auth, new GoogleAuthProvider())
+      const domain = result.user.email?.split('@')[1]
+      if (domain !== 'dawsonschool.org' && domain !== 'dawsonstudents.org') {
+        await signOut(auth)
+        localStorage.removeItem('reopenStudentPortal')
+        setSignInError('Sign-in is restricted to Dawson School accounts.')
+        return
+      }
     } catch (e: unknown) {
       localStorage.removeItem('reopenStudentPortal')
       const msg = e instanceof Error ? e.message : String(e)
@@ -544,6 +551,11 @@ function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, o
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -555,7 +567,7 @@ function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, o
           </div>
           <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>
         </div>
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
+        <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 flex flex-col gap-4">
           <div className="flex gap-2">
             {(['create', 'join'] as const).map(m => (
               <button key={m} onClick={() => onSetMode(m)}
@@ -682,6 +694,11 @@ ${contactEmail}`,
   const [body, setBody] = useState(templates[type].body)
   const [copied, setCopied] = useState(false)
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   function copyToClipboard() {
     navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`)
     setCopied(true)
@@ -705,7 +722,7 @@ ${contactEmail}`,
           </div>
           <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>
         </div>
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-4">
+        <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 flex flex-col gap-4">
           <div>
             <label className={labelCls}>To</label>
             <input value={contact} readOnly className={`${inputCls} opacity-60 cursor-default`} />

@@ -31,6 +31,11 @@ export function StudentPortal({ onClose, onSessionChange }: Props) {
   const [saving, setSaving] = useState(false)
   const [existingTeams, setExistingTeams] = useState<{ name: string; members: string }[]>([])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   // Watch auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -82,7 +87,14 @@ export function StudentPortal({ onClose, onSessionChange }: Props) {
     // the page will reload. Set a flag so App.tsx can reopen the portal.
     localStorage.setItem('reopenStudentPortal', String(Date.now()))
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider())
+      const result = await signInWithPopup(auth, new GoogleAuthProvider())
+      const domain = result.user.email?.split('@')[1]
+      if (domain !== 'dawsonschool.org' && domain !== 'dawsonstudents.org') {
+        await signOut(auth)
+        localStorage.removeItem('reopenStudentPortal')
+        setError('Sign-in is restricted to Dawson School accounts.')
+        return
+      }
       // Don't remove the flag here — the new tab needs to read it on load.
       // App.tsx removes it on page load.
     } catch (e: unknown) {
@@ -146,7 +158,7 @@ export function StudentPortal({ onClose, onSessionChange }: Props) {
           <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-6 py-5">
+        <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5">
 
           {/* ── LOADING ── */}
           {view === 'loading' && (
