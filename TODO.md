@@ -34,6 +34,7 @@ Last updated: 2026-05-14
 
 ## Completed
 
+- [x] **Code cleanup** — removed leftover `members: ''` property from `createNewTeam()`; deleted dead `.edit-danger-zone` / `.edit-danger-label` CSS classes (2026-04-02)
 - [x] **Modal scroll lock** — `overscroll-y-contain` + `document.body.overflow = hidden` applied to all 6 modals; background no longer scrolls when scrolling inside a modal
 - [x] **Photo gallery arrows** — prev/next buttons and photo count badge (1/3) added to ProblemDetail carousel
 - [x] **Full image display** — switched from fixed-height `object-cover` to `object-contain` so photos are never cropped in the detail modal
