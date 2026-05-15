@@ -4,7 +4,7 @@ Last updated: 2026-05-14
 
 ## Before User Launch
 - [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx and StudentPortal.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
-- [ ] **End-to-end submission wizard check** — step through: fill out form → upload photo → submit → confirm problem appears in gallery with correct data
+- [x] **End-to-end submission wizard check** — all fields, dropdowns, photo upload, validation, and gallery appearance verified
 - [ ] **Clean up branches** — delete stale `dev` branch (pre-React era, no longer relevant); delete `react-app` branch after merging to main
 - [ ] **Merge react-app → main** — open PR on GitHub, merge, then update `deploy.yml` to trigger on `main` instead of `react-app`
 
