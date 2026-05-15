@@ -306,7 +306,10 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             {canSeeNotes && (
               <div>
                 <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-                  Team Notes <span className="normal-case font-normal text-white/50">(only visible to the claiming team)</span>
+                  Team Notes{' '}
+                  <span className="normal-case font-normal text-white/50">
+                    {isSuperUser ? '(visible to you as a super user)' : '(only visible to your team)'}
+                  </span>
                 </h3>
                 {notes.length === 0 && (
                   <p className="text-white/55 text-sm mb-3">No notes yet.</p>
@@ -359,18 +362,18 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                 ))}
               </div>
               <div className="flex flex-col gap-2">
-                <input
-                  value={anonName}
-                  onChange={e => setAnonName(e.target.value)}
-                  placeholder="Your name *"
-                  className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
+                <textarea
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  placeholder="Add a comment…"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors resize-none"
                 />
                 <div className="flex gap-2">
                   <input
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleComment()}
-                    placeholder="Add a comment…"
+                    value={anonName}
+                    onChange={e => setAnonName(e.target.value)}
+                    placeholder="Your name"
                     className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors"
                   />
                   <button
@@ -381,9 +384,6 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     {submittingComment ? 'Posting…' : 'Post'}
                   </button>
                 </div>
-                {!anonName.trim() && commentText.trim() && (
-                  <p className="text-amber-400/80 text-xs">Enter your name above to post.</p>
-                )}
               </div>
             </div>
           </div>
