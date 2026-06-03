@@ -136,22 +136,31 @@ function ProblemCard({ problem, onSelect }: {
 }
 
 // ── CommentPopover ───────────────────────────────────────
+type PopoverComment = { text: string; author: string; createdAt: number }
+
 function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () => void }) {
   const [name, setName] = useState('')
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [done, setDone] = useState(false)
+  const [comments, setComments] = useState<PopoverComment[]>(
+    ((problem.comments || []) as unknown[]).filter(
+      (c): c is PopoverComment => typeof c === 'object' && c !== null && 'text' in c
+    )
+  )
   const nameRef = useRef<HTMLInputElement>(null)
+  const textRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { nameRef.current?.focus() }, [])
 
   async function handlePost() {
     if (!text.trim() || !name.trim()) return
     setSubmitting(true)
-    const c = { text: text.trim(), author: name.trim(), createdAt: Date.now() }
+    const c: PopoverComment = { text: text.trim(), author: name.trim(), createdAt: Date.now() }
     await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
-    setDone(true)
-    setTimeout(onClose, 1200)
+    setComments(prev => [...prev, c])
+    setText('')
+    setSubmitting(false)
+    textRef.current?.focus()
   }
 
   return (
@@ -168,27 +177,35 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
         <div className="flex items-start justify-between">
           <div>
             <p className="text-white text-sm font-semibold leading-snug line-clamp-1">{problem.title}</p>
-            <p className="text-white/60 text-xs mt-0.5">Leave a comment</p>
+            <p className="text-white/60 text-xs mt-0.5">Comments ({comments.length})</p>
           </div>
           <button onClick={onClose} className="text-white/55 hover:text-white/80 transition-colors ml-2">✕</button>
         </div>
-        {done ? (
-          <p className="text-emerald-400 text-sm text-center py-2">✓ Comment posted!</p>
+
+        {comments.length === 0 ? (
+          <p className="text-white/55 text-sm">No comments yet.</p>
         ) : (
-          <>
-            <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
-              placeholder="Your name (required)"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
-            <input value={text} onChange={e => setText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handlePost()}
-              placeholder="What do you think?"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
-            <button onClick={handlePost} disabled={submitting || !text.trim() || !name.trim()}
-              className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
-              {submitting ? 'Posting…' : 'Post Comment'}
-            </button>
-          </>
+          <div className="max-h-56 overflow-y-auto space-y-2 -mr-1 pr-1">
+            {comments.map((c, i) => (
+              <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
+                <p className="text-white/75 text-sm leading-relaxed">{c.text}</p>
+                <p className="text-white/55 text-xs mt-1">{c.author}</p>
+              </div>
+            ))}
+          </div>
         )}
+
+        <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
+          placeholder="Your name (required)"
+          className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
+        <input ref={textRef} value={text} onChange={e => setText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handlePost()}
+          placeholder="What do you think?"
+          className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />
+        <button onClick={handlePost} disabled={submitting || !text.trim() || !name.trim()}
+          className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">
+          {submitting ? 'Posting…' : 'Post Comment'}
+        </button>
       </motion.div>
     </div>
   )
