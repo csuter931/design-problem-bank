@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm --version)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh run *)",
+      "Bash(command -v gh)"
+    ]
+  }
+}

@@ -15,6 +15,9 @@ dist-ssr
 # Claude Code personal (per-machine) settings — keep local, never commit
 .claude/settings.local.json
 
+# Claude Code worktrees (created by isolation mode) — never commit
+.claude/worktrees/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

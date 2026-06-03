@@ -1,8 +1,0 @@
-# OS files
-Thumbs.db
-.DS_Store
-desktop.ini
-
-# Editor
-.vscode/
-*.swp
