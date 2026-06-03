@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, deleteDoc, query, where, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-interface TeamGroup {
-  name: string
-  memberCount: number
-  activeProblems: number
-}
+import { buildTeamGroups, type TeamGroup } from '@/lib/teams'
 
 export function ManageTeamsModal({ onClose, problems }: {
   onClose: () => void
@@ -34,19 +30,8 @@ export function ManageTeamsModal({ onClose, problems }: {
     setError('')
     try {
       const snap = await getDocs(collection(db, 'teams'))
-      const byName = new Map<string, number>()
-      snap.docs.forEach(d => {
-        const name = d.data().name as string | undefined
-        if (name) byName.set(name, (byName.get(name) ?? 0) + 1)
-      })
-      const groups: TeamGroup[] = Array.from(byName.entries()).map(([name, memberCount]) => ({
-        name,
-        memberCount,
-        activeProblems: problems.filter(p =>
-          p.claimedByTeam === name && (p.status === 'claimed' || p.status === 'inprogress')
-        ).length,
-      }))
-      setTeams(groups)
+      const teamDocs = snap.docs.map(d => ({ id: d.id, name: d.data().name as string | undefined }))
+      setTeams(buildTeamGroups(teamDocs, problems))
     } catch (e) {
       console.error('loadTeams error:', e)
       setError('Failed to load teams.')
@@ -56,7 +41,11 @@ export function ManageTeamsModal({ onClose, problems }: {
   }
 
   async function handleDeleteTeam(teamName: string) {
-    if (!confirm(`Delete team "${teamName}"? Their claimed problems will return to Available.`)) return
+    const solved = teams.find(t => t.name === teamName)?.solvedProblems ?? 0
+    const solvedNote = solved > 0
+      ? `\n\n${solved} solved problem${solved !== 1 ? 's' : ''} will keep "${teamName}" as a "solved by" record.`
+      : ''
+    if (!confirm(`Delete team "${teamName}"? Their claimed problems will return to Available.${solvedNote}`)) return
     setDeletingTeam(teamName)
     try {
       // Query Firestore directly to avoid stale prop snapshot
@@ -109,7 +98,14 @@ export function ManageTeamsModal({ onClose, problems }: {
               {teams.map(t => (
                 <div key={t.name} className="flex items-center justify-between px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl">
                   <div>
-                    <p className="text-white text-sm font-semibold">{t.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white text-sm font-semibold">{t.name}</p>
+                      {t.orphaned && (
+                        <span className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          orphaned
+                        </span>
+                      )}
+                    </div>
                     <p className="text-white/40 text-xs">
                       {t.memberCount} member{t.memberCount !== 1 ? 's' : ''}
                       {t.activeProblems > 0 && ` · ${t.activeProblems} active problem${t.activeProblems !== 1 ? 's' : ''}`}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import {
-  collection, query, orderBy, onSnapshot,
+  collection, query, where, orderBy, onSnapshot,
   doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, deleteField,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
@@ -133,10 +133,47 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
   async function handleSignOut() { await signOut(auth); onBack() }
 
+  // Before the last member abandons a team name (by leaving or switching),
+  // warn about and release any problems still actively claimed under it, so
+  // they aren't orphaned. Returns false if the user cancels (abort the change).
+  async function confirmTeamChange(action: 'leave' | 'switch', oldName?: string): Promise<boolean> {
+    const leaveConfirm = () => confirm('Leave your team? You can rejoin or create a new one anytime.')
+    if (!oldName || !user) return action === 'leave' ? leaveConfirm() : true
+
+    // If anyone else still holds this name, the team lives on — nothing to release.
+    const teamSnap = await getDocs(query(collection(db, 'teams'), where('name', '==', oldName)))
+    const othersOnTeam = teamSnap.docs.some(d => d.id !== user.uid)
+
+    // Active (claimed / in-progress) problems still stamped with this name.
+    const claimedSnap = await getDocs(query(collection(db, 'problems'), where('claimedByTeam', '==', oldName)))
+    const active = claimedSnap.docs.filter(d => ['claimed', 'inprogress'].includes(d.data().status))
+
+    if (othersOnTeam || active.length === 0) {
+      return action === 'leave' ? leaveConfirm() : true
+    }
+
+    const verb = action === 'leave' ? 'Leaving' : 'Switching teams'
+    const list = active.map(d => `• ${d.data().title}`).join('\n')
+    const ok = confirm(
+      `You're the last member of "${oldName}". ${verb} will release ${active.length} claimed ` +
+      `problem${active.length !== 1 ? 's' : ''} back to Available:\n\n${list}\n\nContinue?`,
+    )
+    if (!ok) return false
+    await Promise.all(active.map(d => updateDoc(d.ref, {
+      status: 'new',
+      claimedByTeam: deleteField(),
+      claimedByUser: deleteField(),
+      claimedAt: deleteField(),
+    })))
+    return true
+  }
+
   async function handleCreateTeam() {
     if (!teamName.trim() || !user) return
+    const newName = teamName.trim()
+    if (team && team.name !== newName && !(await confirmTeamChange('switch', team.name))) return
     setSavingTeam(true)
-    const t: Team = { name: teamName.trim(), members: '', joinedAt: Date.now() }
+    const t: Team = { name: newName, members: '', joinedAt: Date.now() }
     await setDoc(doc(db, 'teams', user.uid), t)
     setTeam(t); setTeamSetupOpen(false); setTeamName('')
     setSavingTeam(false)
@@ -144,6 +181,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
   async function handleJoinTeam(t: Team) {
     if (!user) return
+    if (team && team.name !== t.name && !(await confirmTeamChange('switch', team.name))) return
     setSavingTeam(true)
     await setDoc(doc(db, 'teams', user.uid), t)
     setTeam(t); setTeamSetupOpen(false)
@@ -151,7 +189,8 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   }
 
   async function handleLeaveTeam() {
-    if (!user || !confirm('Leave your team? You can rejoin or create a new one anytime.')) return
+    if (!user) return
+    if (!(await confirmTeamChange('leave', team?.name))) return
     await deleteDoc(doc(db, 'teams', user.uid))
     setTeam(null); setTeamName('')
     await loadExistingTeams()
