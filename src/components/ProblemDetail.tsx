@@ -89,6 +89,18 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false)
+      else if (e.key === 'ArrowLeft') setPhotoIndex(i => (i - 1 + photos.length) % photos.length)
+      else if (e.key === 'ArrowRight') setPhotoIndex(i => (i + 1) % photos.length)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen])
+
   const status = problem.status || 'new'
   const canSeeNotes = isSuperUser || (!!currentTeam && currentTeam.name === problem.claimedByTeam)
   const canAddNote = canSeeNotes && (isSuperUser || status !== 'solved')
@@ -173,15 +185,20 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               />
               {photos.length > 1 && (
                 <>
-                  <button
+                  {/* Side click zones — wide nav targets; the center of the photo still opens the zoom view */}
+                  <div
+                    className="absolute inset-y-0 left-0 w-1/4 cursor-pointer flex items-center pl-2 group"
                     onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center hover:bg-black/70 transition-colors"
-                  >‹</button>
-                  <button
+                  >
+                    <div className="w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center group-hover:bg-black/70 transition-colors pointer-events-none">‹</div>
+                  </div>
+                  <div
+                    className="absolute inset-y-0 right-0 w-1/4 cursor-pointer flex items-center justify-end pr-2 group"
                     onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center hover:bg-black/70 transition-colors"
-                  >›</button>
-                  <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+                  >
+                    <div className="w-8 h-8 rounded-full bg-black/50 text-white text-lg flex items-center justify-center group-hover:bg-black/70 transition-colors pointer-events-none">›</div>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full pointer-events-none">
                     {photoIndex + 1} / {photos.length}
                   </div>
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -412,40 +429,50 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
       {/* Lightbox */}
       {lightboxOpen && (
         <div className="fixed inset-0 z-[500] bg-black/90 flex items-center justify-center">
-          {/* Image */}
-          <img
-            src={photos[photoIndex]}
-            alt={problem.title}
-            className="max-w-full max-h-full object-contain select-none"
-          />
+          {/* Backdrop — click anywhere outside the image to close */}
+          <div className="absolute inset-0 cursor-zoom-out" onClick={() => setLightboxOpen(false)} />
 
-          {/* Left/right click zones + arrows (multiple photos) */}
+          {/* Wrapper shrink-wraps to the image so the side zones cover exactly the photo */}
+          <div className="relative">
+            <img
+              src={photos[photoIndex]}
+              alt={problem.title}
+              className={`max-w-[92vw] max-h-[92vh] object-contain select-none ${photos.length === 1 ? 'cursor-zoom-out' : ''}`}
+              onClick={photos.length === 1 ? () => setLightboxOpen(false) : undefined}
+            />
+            {/* Image halves navigate (multiple photos) */}
+            {photos.length > 1 && (
+              <>
+                <div
+                  className="absolute inset-y-0 left-0 w-1/2 cursor-pointer"
+                  onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
+                />
+                <div
+                  className="absolute inset-y-0 right-0 w-1/2 cursor-pointer"
+                  onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
+                />
+              </>
+            )}
+          </div>
+
+          {/* Arrows — visible affordance at screen edges, also clickable */}
           {photos.length > 1 && (
             <>
-              <div
-                className="absolute inset-y-0 left-0 w-1/2 cursor-w-resize flex items-center pl-4"
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition-colors"
                 onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
-              >
-                <div className="w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center pointer-events-none">‹</div>
-              </div>
-              <div
-                className="absolute inset-y-0 right-0 w-1/2 cursor-e-resize flex items-center justify-end pr-4"
+              >‹</button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center hover:bg-white/20 transition-colors"
                 onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
-              >
-                <div className="w-10 h-10 rounded-full bg-white/10 text-white text-2xl flex items-center justify-center pointer-events-none">›</div>
-              </div>
+              >›</button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full pointer-events-none">
                 {photoIndex + 1} / {photos.length}
               </div>
             </>
           )}
 
-          {/* Single photo — click backdrop to close */}
-          {photos.length === 1 && (
-            <div className="absolute inset-0 cursor-zoom-out" onClick={() => setLightboxOpen(false)} />
-          )}
-
-          {/* Close button — sits above zones */}
+          {/* Close button */}
           <button
             className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors text-lg"
             onClick={() => setLightboxOpen(false)}
