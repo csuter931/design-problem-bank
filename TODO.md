@@ -1,9 +1,17 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-05-14
+Last updated: 2026-07-02
+
+## Security — Firestore rules hardening (next cycle)
+Findings from the 2026-07-02 code review. The client code is ready for these; the fixes belong in `firestore.rules` (deploy with `firebase deploy --only firestore:rules`):
+- [ ] **Anonymous problem updates are wide open** — rules only fence off `internalNotes`; anyone can rewrite title/status/claims or wipe comments via a REST call. Restrict unauthenticated updates to the two shapes the client actually uses: `upvotes` increment and `comments` arrayUnion.
+- [ ] **"Authenticated" means any Google account** — the Dawson-domain check is client-side only. Enforce `@dawsonschool.org` / `@dawsonstudents.org` in the rules (e.g. `request.auth.token.email.matches(...)`) so deletes, team writes, and notes edits truly require a Dawson account.
+- [ ] **Team notes + submitter contact are world-readable** — they live on the public problem doc, so every anonymous visitor downloads them. Move `internalNotes` (and possibly `submitterContact`) to a subcollection with restricted read rules.
+- [ ] **Super-user team delete needs a rules path** — `teams` delete is own-doc only, so ManageTeamsModal's delete fails for other members' docs (the client now fails cleanly without half-completing). Add a superuser clause to the teams rules.
+- [ ] After deploying rule changes, retest: anonymous upvote/comment, submit wizard, claim/status flows, super-user edit/delete/unclaim, Manage Teams delete.
 
 ## Before User Launch
-- [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx and StudentPortal.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
+- [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
 - [x] **End-to-end submission wizard check** — all fields, dropdowns, photo upload, validation, and gallery appearance verified
 - [x] **Clean up branches** — deleted stale `dev` and `react-app` remote branches
 - [x] **Merge react-app → main** — fast-forward merged; `deploy.yml` now triggers on `main`
@@ -24,7 +32,7 @@ Last updated: 2026-05-14
 - Add Netlify deploy previews if you ever need to share a work-in-progress URL with someone before merging
 
 ## Future Ideas (not urgent)
-- **Expand sign-in beyond Dawson domains** — if the app ever grows past Dawson, update the domain allowlist in `handleSignIn` in StudentDashboard.tsx and StudentPortal.tsx (currently hardcoded to @dawsonschool.org and @dawsonstudents.org) and decide on a new access-control strategy
+- **Expand sign-in beyond Dawson domains** — if the app ever grows past Dawson, update the domain allowlist in `handleSignIn` in StudentDashboard.tsx (currently hardcoded to @dawsonschool.org and @dawsonstudents.org) and decide on a new access-control strategy
 
 - Consider end-of-year archiving of claimed/solved problems
 - Polish UI/UX based on real student usage feedback

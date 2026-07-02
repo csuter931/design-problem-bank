@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# Design Problem Bank
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web app for [Dawson School](https://www.dawsonschool.org/) where the community submits real-world design problems and student teams claim and solve them.
 
-Currently, two official plugins are available:
+**Live site:** https://csuter931.github.io/design-problem-bank/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- **Public gallery** — anyone can browse, search, filter, upvote, and comment on submitted problems
+- **Submit wizard** — a 3-step form for submitting a new problem, with photo uploads
+- **Student dashboard** — students sign in with their school Google account, form teams, claim problems, track status (claimed → in progress → solved), keep private team notes, and generate outreach emails to submitters
+- **Super users (teachers)** — can edit/delete/unclaim any problem, see all teams' notes, and manage teams
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech
 
-## Expanding the ESLint configuration
+| Layer | Choice |
+|---|---|
+| Frontend | React 19 + TypeScript + Vite, Tailwind CSS, framer-motion |
+| Database | Firebase Firestore (real-time listeners) |
+| Auth | Firebase Google Sign-in (Dawson accounts only) |
+| Images | Cloudinary unsigned uploads |
+| Hosting | GitHub Pages, deployed by GitHub Actions on push to `main` |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # dev server at http://localhost:5173
+npm test         # run tests
+npm run lint     # ESLint
+npm run build    # type-check + production build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Work on a branch, open a PR to `main`. CI runs tests before every deploy — a failing test blocks the release.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Changes to `firestore.rules` are **not** deployed by git push; run `firebase deploy --only firestore:rules`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+See [SETUP.md](./SETUP.md) for the full development/deployment guide and [CLAUDE.md](./CLAUDE.md) for architecture and backend configuration details.
