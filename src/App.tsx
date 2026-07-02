@@ -389,6 +389,11 @@ function App() {
           )}
         </div>
 
+        {/* Build stamp — lets you confirm which version is live */}
+        <div className="max-w-7xl mx-auto px-6 pb-8 text-center">
+          <span className="text-white/25 text-xs">Build {__BUILD_STAMP__}</span>
+        </div>
+
       </section>
     </div>
   )
