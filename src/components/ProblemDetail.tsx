@@ -68,9 +68,11 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
     )
   )
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [commentError, setCommentError] = useState('')
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState(problem.internalNotes ?? [])
   const [submittingNote, setSubmittingNote] = useState(false)
+  const [noteError, setNoteError] = useState('')
 
   useEffect(() => { setNotes(problem.internalNotes ?? []) }, [problem.internalNotes])
 
@@ -110,30 +112,44 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
   }
 
   async function handleComment() {
-    if (!commentText.trim() || !anonName.trim()) return
+    if (submittingComment || !commentText.trim() || !anonName.trim()) return
     const author = anonName.trim()
     setSubmittingComment(true)
+    setCommentError('')
     const c: Comment = { text: commentText.trim(), author, createdAt: Date.now() }
-    await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
-    setComments(prev => [...prev, c])
-    setCommentText('')
-    setSubmittingComment(false)
+    try {
+      await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
+      setComments(prev => [...prev, c])
+      setCommentText('')
+    } catch {
+      setCommentError('Failed to post comment. Please try again.')
+    } finally {
+      setSubmittingComment(false)
+    }
   }
 
   async function handleAddNote() {
-    if (!canAddNote || !noteText.trim() || !user) return
+    if (submittingNote || !canAddNote || !noteText.trim() || !user) return
     setSubmittingNote(true)
+    setNoteError('')
     const newNote = {
       author: user.displayName || user.email || 'Unknown',
       text: noteText.trim(),
       createdAt: Date.now(),
     }
-    const updated = [...notes, newNote]
-    await updateDoc(doc(db, 'problems', problem.id), { internalNotes: updated })
-    setNotes(updated)
-    setNoteText('')
-    onNoteAdded?.(problem.id, updated)
-    setSubmittingNote(false)
+    try {
+      // arrayUnion appends atomically — a full-array replace would silently drop
+      // a note written by a teammate between this modal opening and saving.
+      await updateDoc(doc(db, 'problems', problem.id), { internalNotes: arrayUnion(newNote) })
+      const updated = [...notes, newNote]
+      setNotes(updated)
+      setNoteText('')
+      onNoteAdded?.(problem.id, updated)
+    } catch {
+      setNoteError('Failed to save note. Please try again.')
+    } finally {
+      setSubmittingNote(false)
+    }
   }
 
   function timeAgo(ts: number) {
@@ -329,6 +345,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     </div>
                   ))}
                 </div>
+                {noteError && <p className="text-red-400 text-xs mb-2">{noteError}</p>}
                 {canAddNote ? (
                   <div className="flex gap-2">
                     <input
@@ -368,6 +385,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   </div>
                 ))}
               </div>
+              {commentError && <p className="text-red-400 text-xs mb-2">{commentError}</p>}
               <div className="flex flex-col gap-2">
                 <textarea
                   value={commentText}

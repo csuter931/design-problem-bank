@@ -130,6 +130,7 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
   const [name, setName] = useState('')
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [comments, setComments] = useState<PopoverComment[]>(
     ((problem.comments || []) as unknown[]).filter(
       (c): c is PopoverComment => typeof c === 'object' && c !== null && 'text' in c
@@ -141,14 +142,20 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
   useEffect(() => { nameRef.current?.focus() }, [])
 
   async function handlePost() {
-    if (!text.trim() || !name.trim()) return
+    if (submitting || !text.trim() || !name.trim()) return
     setSubmitting(true)
+    setError('')
     const c: PopoverComment = { text: text.trim(), author: name.trim(), createdAt: Date.now() }
-    await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
-    setComments(prev => [...prev, c])
-    setText('')
-    setSubmitting(false)
-    textRef.current?.focus()
+    try {
+      await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
+      setComments(prev => [...prev, c])
+      setText('')
+      textRef.current?.focus()
+    } catch {
+      setError('Failed to post comment. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -183,6 +190,7 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
           </div>
         )}
 
+        {error && <p className="text-red-400 text-xs">{error}</p>}
         <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
           placeholder="Your name (required)"
           className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary transition-colors" />

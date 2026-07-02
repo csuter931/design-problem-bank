@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { collection, getDocs, deleteDoc, query, where, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { buildTeamGroups, type TeamGroup } from '@/lib/teams'
@@ -23,9 +23,7 @@ export function ManageTeamsModal({ onClose, problems }: {
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  useEffect(() => { loadTeams() }, [])
-
-  async function loadTeams() {
+  const loadTeams = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -38,7 +36,9 @@ export function ManageTeamsModal({ onClose, problems }: {
     } finally {
       setLoading(false)
     }
-  }
+  }, [problems])
+
+  useEffect(() => { loadTeams() }, [loadTeams])
 
   async function handleDeleteTeam(teamName: string) {
     const solved = teams.find(t => t.name === teamName)?.solvedProblems ?? 0
@@ -48,6 +48,12 @@ export function ManageTeamsModal({ onClose, problems }: {
     if (!confirm(`Delete team "${teamName}"? Their claimed problems will return to Available.${solvedNote}`)) return
     setDeletingTeam(teamName)
     try {
+      // Delete the team docs FIRST — if the rules reject this, nothing has
+      // changed yet. Releasing problems before a failed delete would leave a
+      // half-completed state (problems back in Available, team still standing).
+      const teamSnap = await getDocs(query(collection(db, 'teams'), where('name', '==', teamName)))
+      await Promise.all(teamSnap.docs.map(d => deleteDoc(d.ref)))
+
       // Query Firestore directly to avoid stale prop snapshot
       const claimedSnap = await getDocs(query(
         collection(db, 'problems'),
@@ -62,9 +68,6 @@ export function ManageTeamsModal({ onClose, problems }: {
           claimedAt: deleteField(),
         }))
       )
-      // Delete all team docs with this name
-      const teamSnap = await getDocs(query(collection(db, 'teams'), where('name', '==', teamName)))
-      await Promise.all(teamSnap.docs.map(d => deleteDoc(d.ref)))
       setTeams(prev => prev.filter(t => t.name !== teamName))
     } catch (e) {
       console.error('deleteTeam error:', e)

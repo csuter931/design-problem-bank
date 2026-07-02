@@ -111,6 +111,9 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
         setSignInError('Sign-in is restricted to Dawson School accounts.')
         return
       }
+      // Popup flow means no page reload happened — clear the flag so a later
+      // manual reload doesn't teleport the user back into the student view.
+      localStorage.removeItem('reopenStudentPortal')
     } catch (e: unknown) {
       localStorage.removeItem('reopenStudentPortal')
       const msg = e instanceof Error ? e.message : String(e)
@@ -162,50 +165,80 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     const newName = teamName.trim()
     if (team && team.name !== newName && !(await confirmTeamChange('switch', team.name))) return
     setSavingTeam(true)
-    const t: Team = { name: newName, members: '', joinedAt: Date.now() }
-    await setDoc(doc(db, 'teams', user.uid), t)
-    setTeam(t); setTeamSetupOpen(false); setTeamName('')
-    setSavingTeam(false)
+    try {
+      const t: Team = { name: newName, members: '', joinedAt: Date.now() }
+      await setDoc(doc(db, 'teams', user.uid), t)
+      setTeam(t); setTeamSetupOpen(false); setTeamName('')
+    } catch (e) {
+      console.error('Failed to create team:', e)
+      alert('Failed to create team. Please try again.')
+    } finally {
+      setSavingTeam(false)
+    }
   }
 
   async function handleJoinTeam(t: Team) {
     if (!user) return
     if (team && team.name !== t.name && !(await confirmTeamChange('switch', team.name))) return
     setSavingTeam(true)
-    await setDoc(doc(db, 'teams', user.uid), t)
-    setTeam(t); setTeamSetupOpen(false)
-    setSavingTeam(false)
+    try {
+      // Fresh membership doc — copying the joined member's doc verbatim would
+      // carry over their joinedAt timestamp.
+      const membership: Team = { name: t.name, members: '', joinedAt: Date.now() }
+      await setDoc(doc(db, 'teams', user.uid), membership)
+      setTeam(membership); setTeamSetupOpen(false)
+    } catch (e) {
+      console.error('Failed to join team:', e)
+      alert('Failed to join team. Please try again.')
+    } finally {
+      setSavingTeam(false)
+    }
   }
 
   async function handleLeaveTeam() {
     if (!user) return
     if (!(await confirmTeamChange('leave', team?.name))) return
-    await deleteDoc(doc(db, 'teams', user.uid))
-    setTeam(null); setTeamName('')
-    await loadExistingTeams()
-    setTeamSetupOpen(true)
+    try {
+      await deleteDoc(doc(db, 'teams', user.uid))
+      setTeam(null); setTeamName('')
+      await loadExistingTeams()
+      setTeamSetupOpen(true)
+    } catch (e) {
+      console.error('Failed to leave team:', e)
+      alert('Failed to leave team. Please try again.')
+    }
   }
 
   async function claimProblem(id: string) {
     if (!team) return
-    await updateDoc(doc(db, 'problems', id), {
-      status: 'claimed',
-      claimedByTeam: team.name,
-      claimedByUser: user?.displayName || user?.email || '',
-      claimedAt: Date.now(),
-    })
-    const p = problems.find(p => p.id === id)
-    if (p) setTimeout(() => setEmailModal({ problem: { ...p, claimedByTeam: team.name }, type: 'intro' }), 400)
+    try {
+      await updateDoc(doc(db, 'problems', id), {
+        status: 'claimed',
+        claimedByTeam: team.name,
+        claimedByUser: user?.displayName || user?.email || '',
+        claimedAt: Date.now(),
+      })
+      const p = problems.find(p => p.id === id)
+      if (p) setTimeout(() => setEmailModal({ problem: { ...p, claimedByTeam: team.name }, type: 'intro' }), 400)
+    } catch (e) {
+      console.error('Failed to claim problem:', e)
+      alert('Failed to claim problem. Please try again.')
+    }
   }
 
   async function updateStatus(id: string, status: 'inprogress' | 'solved') {
-    await updateDoc(doc(db, 'problems', id), {
-      status,
-      ...(status === 'solved' ? { solvedAt: Date.now() } : {}),
-    })
-    if (status === 'solved') {
-      const p = problems.find(p => p.id === id)
-      if (p) setTimeout(() => setEmailModal({ problem: p, type: 'solved' }), 400)
+    try {
+      await updateDoc(doc(db, 'problems', id), {
+        status,
+        ...(status === 'solved' ? { solvedAt: Date.now() } : {}),
+      })
+      if (status === 'solved') {
+        const p = problems.find(p => p.id === id)
+        if (p) setTimeout(() => setEmailModal({ problem: p, type: 'solved' }), 400)
+      }
+    } catch (e) {
+      console.error('Failed to update status:', e)
+      alert('Failed to update problem status. Please try again.')
     }
   }
 
