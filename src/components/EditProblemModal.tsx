@@ -2,9 +2,15 @@ import { useState, useEffect } from 'react'
 import { doc, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Problem } from '@/components/ProblemDetail'
+import { CATEGORY_OPTIONS, DISCIPLINE_OPTIONS, type TagOption } from '@/lib/problemMeta'
 
-const CATEGORIES = ['space', 'systems', 'process', 'communication', 'safety', 'environment', 'technology', 'other']
-const DISCIPLINES = ['product-design', 'graphic-design', 'interior-design', 'architecture', 'engineering', 'computer-science', 'business', 'other']
+// Canonical options plus any legacy tags already on the problem (from older
+// taxonomies), so existing tags stay visible and removable in the editor.
+function withLegacyTags(options: TagOption[], existing: string[]): TagOption[] {
+  const known = new Set(options.map(o => o.value))
+  const legacy = existing.filter(v => !known.has(v)).map(v => ({ value: v, label: v.replace(/-/g, ' ') }))
+  return [...options, ...legacy]
+}
 
 const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary focus:bg-white/[0.09] transition-colors'
 const labelCls = 'block text-sm font-medium text-white/80 mb-1'
@@ -28,6 +34,9 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
   const [constraints, setConstraints] = useState(problem.constraints ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const categoryOptions = withLegacyTags(CATEGORY_OPTIONS, problem.categories ?? [])
+  const disciplineOptions = withLegacyTags(DISCIPLINE_OPTIONS, problem.disciplines ?? [])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -149,10 +158,10 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
           <div>
             <label className={labelCls}>Categories</label>
             <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map(c => (
-                <button key={c} onClick={() => toggleTag(categories, setCategories, c)}
-                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${categories.includes(c) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
-                  {c}
+              {categoryOptions.map(c => (
+                <button key={c.value} onClick={() => toggleTag(categories, setCategories, c.value)}
+                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${categories.includes(c.value) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
+                  {c.label}
                 </button>
               ))}
             </div>
@@ -161,10 +170,10 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
           <div>
             <label className={labelCls}>Disciplines</label>
             <div className="flex flex-wrap gap-1.5">
-              {DISCIPLINES.map(d => (
-                <button key={d} onClick={() => toggleTag(disciplines, setDisciplines, d)}
-                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${disciplines.includes(d) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
-                  {d.replace(/-/g, ' ')}
+              {disciplineOptions.map(d => (
+                <button key={d.value} onClick={() => toggleTag(disciplines, setDisciplines, d.value)}
+                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${disciplines.includes(d.value) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
+                  {d.label}
                 </button>
               ))}
             </div>

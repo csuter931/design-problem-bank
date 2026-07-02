@@ -5,21 +5,9 @@ import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
+import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
 const StudentDashboard = lazy(() => import('@/components/StudentDashboard').then(m => ({ default: m.StudentDashboard })))
-
-
-const STATUS_LABELS: Record<string, string> = {
-  new: 'NEW', claimed: 'CLAIMED', inprogress: 'IN PROGRESS', solved: 'SOLVED',
-}
-const STATUS_COLORS: Record<string, string> = {
-  new:        'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  claimed:    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  inprogress: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  solved:     'bg-purple-500/20 text-purple-300 border-purple-500/30',
-}
-const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
-const SEVERITY_LABEL = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical']
 
 const FILTERS = [
   { label: 'All', value: 'all' },

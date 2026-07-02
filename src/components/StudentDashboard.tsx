@@ -9,24 +9,13 @@ import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { ManageTeamsModal } from '@/components/ManageTeamsModal'
 import { EditProblemModal } from '@/components/EditProblemModal'
 import { AnimatePresence } from 'framer-motion'
+import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
 
 type Tab = 'available' | 'mine' | 'solved' | 'all'
 type AuthView = 'loading' | 'signin' | 'dashboard'
-
-const STATUS_LABELS: Record<string, string> = {
-  new: 'NEW', claimed: 'CLAIMED', inprogress: 'IN PROGRESS', solved: 'SOLVED',
-}
-const STATUS_COLORS: Record<string, string> = {
-  new: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  claimed: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  inprogress: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  solved: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-}
-const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
-const SEVERITY_LABEL = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical']
 
 const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary focus:bg-white/[0.09] transition-colors'
 const labelCls = 'block text-sm font-medium text-white/80 mb-1'

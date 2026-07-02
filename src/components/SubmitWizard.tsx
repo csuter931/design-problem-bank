@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { CATEGORY_OPTIONS, DISCIPLINE_OPTIONS } from '@/lib/problemMeta'
 
 const CLOUDINARY_CLOUD = 'dexhdf03b'
 const CLOUDINARY_PRESET = 'problem-bank'
 
-const CATEGORIES = ['Workspace', 'Workflow', 'Communication', 'Accessibility', 'Sustainability', 'Safety', 'Technology', 'Community', 'Other']
-const DISCIPLINES = ['Product Design', 'Graphic Design', 'UX / Digital', 'Spatial / Interior', 'Service Design', 'Not sure!']
 const SEVERITY = [
   { val: 1, emoji: '😀', label: 'Minor annoyance' },
   { val: 2, emoji: '😕', label: 'Somewhat frustrating' },
@@ -297,10 +296,10 @@ export function SubmitWizard({ onClose }: WizardProps) {
                   <div>
                     <label className={labelCls}>Category</label>
                     <div className="flex gap-2 flex-wrap mt-1">
-                      {CATEGORIES.map(c => (
-                        <button key={c} onClick={() => toggleTag(categories, setCategories, c.toLowerCase())}
-                          className={`px-3 py-1 rounded-lg text-xs border transition-all ${categories.includes(c.toLowerCase()) ? 'bg-primary border-primary text-white' : 'bg-white/[0.04] border-white/10 text-white/50 hover:border-white/25'}`}>
-                          {c}
+                      {CATEGORY_OPTIONS.map(c => (
+                        <button key={c.value} onClick={() => toggleTag(categories, setCategories, c.value)}
+                          className={`px-3 py-1 rounded-lg text-xs border transition-all ${categories.includes(c.value) ? 'bg-primary border-primary text-white' : 'bg-white/[0.04] border-white/10 text-white/50 hover:border-white/25'}`}>
+                          {c.label}
                         </button>
                       ))}
                     </div>
@@ -308,10 +307,10 @@ export function SubmitWizard({ onClose }: WizardProps) {
                   <div>
                     <label className={labelCls}>Design discipline</label>
                     <div className="flex gap-2 flex-wrap mt-1">
-                      {DISCIPLINES.map(d => (
-                        <button key={d} onClick={() => toggleTag(disciplines, setDisciplines, d.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-'))}
-                          className={`px-3 py-1 rounded-lg text-xs border transition-all ${disciplines.includes(d.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-')) ? 'bg-primary border-primary text-white' : 'bg-white/[0.04] border-white/10 text-white/50 hover:border-white/25'}`}>
-                          {d}
+                      {DISCIPLINE_OPTIONS.map(d => (
+                        <button key={d.value} onClick={() => toggleTag(disciplines, setDisciplines, d.value)}
+                          className={`px-3 py-1 rounded-lg text-xs border transition-all ${disciplines.includes(d.value) ? 'bg-primary border-primary text-white' : 'bg-white/[0.04] border-white/10 text-white/50 hover:border-white/25'}`}>
+                          {d.label}
                         </button>
                       ))}
                     </div>
