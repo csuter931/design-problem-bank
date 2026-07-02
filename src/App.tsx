@@ -25,24 +25,20 @@ function ProblemCard({ problem, onSelect }: {
   const status = problem.status || 'new'
   const statusColor = STATUS_COLORS[status] || STATUS_COLORS.new
 
-  const [localUpvotes, setLocalUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
   const [commentOpen, setCommentOpen] = useState(false)
 
-  // Keep upvote count in sync if Firestore updates the problem
-  useEffect(() => { setLocalUpvotes(problem.upvotes || 0) }, [problem.upvotes])
-
+  // The upvote count renders straight from the live problem prop — Firestore's
+  // latency compensation reflects our own increment immediately.
   async function handleUpvote(e: React.MouseEvent) {
     e.stopPropagation()
     if (voted) return
     setVoted(true)
     recordVote(problem.id)
-    setLocalUpvotes(v => v + 1)
     try {
       await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
     } catch {
       setVoted(false)
-      setLocalUpvotes(v => v - 1)
       removeVote(problem.id)
     }
   }
@@ -100,7 +96,7 @@ function ProblemCard({ problem, onSelect }: {
                     : 'text-white/60 hover:text-white/80 hover:bg-white/[0.06]'
                 }`}
               >
-                ▲ {localUpvotes}
+                ▲ {problem.upvotes || 0}
               </button>
               <button
                 onClick={handleCommentClick}
@@ -131,10 +127,10 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [comments, setComments] = useState<PopoverComment[]>(
-    ((problem.comments || []) as unknown[]).filter(
-      (c): c is PopoverComment => typeof c === 'object' && c !== null && 'text' in c
-    )
+  // Derived from the live problem prop — our own arrayUnion write shows up
+  // immediately via Firestore latency compensation, as do other users' comments.
+  const comments = ((problem.comments || []) as unknown[]).filter(
+    (c): c is PopoverComment => typeof c === 'object' && c !== null && 'text' in c
   )
   const nameRef = useRef<HTMLInputElement>(null)
   const textRef = useRef<HTMLInputElement>(null)
@@ -148,7 +144,6 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
     const c: PopoverComment = { text: text.trim(), author: name.trim(), createdAt: Date.now() }
     try {
       await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
-      setComments(prev => [...prev, c])
       setText('')
       textRef.current?.focus()
     } catch {
@@ -219,11 +214,14 @@ function App() {
   const [view, setView] = useState<'gallery' | 'student'>(() => {
     // Auto-navigate to student dashboard after Google OAuth redirect
     const flag = localStorage.getItem('reopenStudentPortal')
-    if (!flag) return 'gallery'
-    localStorage.removeItem('reopenStudentPortal')
-    return (Date.now() - parseInt(flag)) < 5 * 60 * 1000 ? 'student' : 'gallery'
+    return flag && (Date.now() - parseInt(flag)) < 5 * 60 * 1000 ? 'student' : 'gallery'
   })
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  // Consume the OAuth-redirect flag. Clearing it here (not in the state
+  // initializer) keeps the initializer pure — StrictMode double-invokes
+  // initializers in dev, which would eat the flag before the real render.
+  useEffect(() => { localStorage.removeItem('reopenStudentPortal') }, [])
 
   // Load from Firestore in real-time
   useEffect(() => {
@@ -255,6 +253,10 @@ function App() {
       return (b.createdAt || 0) - (a.createdAt || 0)
     })
 
+  // Derive the open modal from the live list so it receives real-time updates
+  // (and closes itself if the problem is deleted).
+  const selectedProblem = selectedId ? problems.find(p => p.id === selectedId) ?? null : null
+
 
   if (view === 'student') {
     return (
@@ -272,7 +274,7 @@ function App() {
           <ProblemDetail
             key={selectedProblem.id}
             problem={selectedProblem}
-            onClose={() => setSelectedProblem(null)}
+            onClose={() => setSelectedId(null)}
           />
         )}
       </AnimatePresence>
@@ -382,7 +384,7 @@ function App() {
             <div className="text-center py-16 text-white/40">No problems match your filter.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {visible.map(p => <ProblemCard key={p.id} problem={p} onSelect={setSelectedProblem} />)}
+              {visible.map(p => <ProblemCard key={p.id} problem={p} onSelect={p => setSelectedId(p.id)} />)}
             </div>
           )}
         </div>

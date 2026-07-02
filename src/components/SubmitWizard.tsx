@@ -19,14 +19,23 @@ const WILLINGNESS = [
   { val: 'minimal', icon: '📧', title: 'Email only',             desc: 'Prefer to just answer a few questions by email' },
 ]
 
+const MAX_PHOTOS = 5
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
 interface WizardProps { onClose: () => void }
+
+// File and preview travel together in one entry — parallel arrays could get
+// out of sync because FileReader callbacks complete in any order, making
+// "remove photo" delete a different file than the preview shown.
+interface PhotoItem { file: File; preview: string }
 
 export function SubmitWizard({ onClose }: WizardProps) {
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [done, setDone] = useState(false)
-  const [photoFiles, setPhotoFiles] = useState<File[]>([])
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
+  const [photos, setPhotos] = useState<PhotoItem[]>([])
+  const [photoError, setPhotoError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Form state
@@ -58,18 +67,25 @@ export function SubmitWizard({ onClose }: WizardProps) {
 
   function addPhotos(files: FileList | null) {
     if (!files) return
-    const arr = Array.from(files).slice(0, 5 - photoFiles.length)
-    setPhotoFiles(prev => [...prev, ...arr])
-    arr.forEach(f => {
+    const incoming = Array.from(files)
+    const oversized = incoming.filter(f => f.size > MAX_PHOTO_BYTES)
+    const accepted = incoming.filter(f => f.size <= MAX_PHOTO_BYTES).slice(0, MAX_PHOTOS - photos.length)
+    const dropped = incoming.length - oversized.length - accepted.length
+    setPhotoError([
+      oversized.length ? `${oversized.length} photo${oversized.length !== 1 ? 's' : ''} over the 5MB limit skipped.` : '',
+      dropped > 0 ? `Only ${MAX_PHOTOS} photos allowed — ${dropped} skipped.` : '',
+    ].filter(Boolean).join(' '))
+    accepted.forEach(f => {
       const reader = new FileReader()
-      reader.onload = e => setPhotoPreviews(prev => [...prev, e.target?.result as string])
+      reader.onload = e => setPhotos(prev =>
+        prev.length < MAX_PHOTOS ? [...prev, { file: f, preview: e.target?.result as string }] : prev
+      )
       reader.readAsDataURL(f)
     })
   }
 
   function removePhoto(i: number) {
-    setPhotoFiles(prev => prev.filter((_, idx) => idx !== i))
-    setPhotoPreviews(prev => prev.filter((_, idx) => idx !== i))
+    setPhotos(prev => prev.filter((_, idx) => idx !== i))
   }
 
   function toggleTag(arr: string[], setArr: (v: string[]) => void, val: string) {
@@ -99,16 +115,19 @@ export function SubmitWizard({ onClose }: WizardProps) {
   async function submit() {
     if (!validateStep()) return
     setSubmitting(true)
+    setSubmitError('')
     try {
-      // Upload photos to Cloudinary
+      // Upload photos to Cloudinary — a failed upload aborts the submission
+      // rather than silently dropping the photo.
       const photoUrls: string[] = []
-      for (const file of photoFiles) {
+      for (const { file } of photos) {
         const fd = new FormData()
         fd.append('file', file)
         fd.append('upload_preset', CLOUDINARY_PRESET)
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd })
         const data = await res.json()
-        if (data.secure_url) photoUrls.push(data.secure_url)
+        if (!data.secure_url) throw new Error(`Photo upload failed: ${data.error?.message || res.status}`)
+        photoUrls.push(data.secure_url)
       }
 
       await addDoc(collection(db, 'problems'), {
@@ -138,6 +157,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
       setDone(true)
     } catch (err) {
       console.error(err)
+      setSubmitError('Something went wrong submitting your problem. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -222,11 +242,12 @@ export function SubmitWizard({ onClose }: WizardProps) {
                       <p className="text-white/25 text-xs">JPG, PNG · Up to 5MB each</p>
                     </div>
                     <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => addPhotos(e.target.files)} />
-                    {photoPreviews.length > 0 && (
+                    {photoError && <p className="text-red-400 text-xs mt-1">{photoError}</p>}
+                    {photos.length > 0 && (
                       <div className="flex gap-2 mt-2 flex-wrap">
-                        {photoPreviews.map((src, i) => (
+                        {photos.map((p, i) => (
                           <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden">
-                            <img src={src} className="w-full h-full object-cover" />
+                            <img src={p.preview} className="w-full h-full object-cover" />
                             <button onClick={() => removePhoto(i)} className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 rounded-full text-white text-[10px] flex items-center justify-center">✕</button>
                           </div>
                         ))}
@@ -363,6 +384,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
             </div>
 
             {/* Footer */}
+            {submitError && <p className="text-red-400 text-xs px-6 pt-3">{submitError}</p>}
             <div className="flex items-center justify-between px-6 py-4 border-t border-white/[0.08]">
               <button
                 onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}

@@ -43,7 +43,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   const [editProblem, setEditProblem] = useState<Problem | null>(null)
 
   // Detail flyout + email modal
-  const [detailProblem, setDetailProblem] = useState<Problem | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [emailModal, setEmailModal] = useState<{ problem: Problem; type: 'intro' | 'update' | 'solved' } | null>(null)
 
   // Auth listener
@@ -263,6 +263,10 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     available, mine, solved, all: problems,
   }
 
+  // Derive the open detail modal from the live list so it receives real-time
+  // updates (notes, edits, status changes) and closes if the problem is deleted.
+  const detailProblem = detailId ? problems.find(p => p.id === detailId) ?? null : null
+
   // ── Render ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-white">
@@ -425,7 +429,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                     team={team}
                     onClaim={claimProblem}
                     onUpdateStatus={updateStatus}
-                    onViewDetail={setDetailProblem}
+                    onViewDetail={p => setDetailId(p.id)}
                     onEmailTemplate={(type) => setEmailModal({ problem: p, type })}
                   />
                 ))
@@ -441,7 +445,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           <ProblemDetail
             key={detailProblem.id}
             problem={detailProblem}
-            onClose={() => setDetailProblem(null)}
+            onClose={() => setDetailId(null)}
             isSuperUser={isSuperUser}
             currentTeam={team}
             user={user}
@@ -450,7 +454,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             onDelete={async (id) => {
               try {
                 await deleteDoc(doc(db, 'problems', id))
-                setDetailProblem(null)
+                setDetailId(null)
               } catch (e) {
                 console.error('Failed to delete problem:', e)
                 alert('Failed to delete problem. Please try again.')
@@ -464,14 +468,11 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   claimedByUser: deleteField(),
                   claimedAt: deleteField(),
                 })
-                setDetailProblem(null)
+                setDetailId(null)
               } catch (e) {
                 console.error('Failed to unclaim problem:', e)
                 alert('Failed to unclaim problem. Please try again.')
               }
-            }}
-            onNoteAdded={(id, notes) => {
-              setDetailProblem(prev => prev?.id === id ? { ...prev, internalNotes: notes } : prev)
             }}
           />
         )}
@@ -480,6 +481,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
       {/* ── EMAIL TEMPLATE MODAL ── */}
       {emailModal && (
         <EmailModal
+          key={emailModal.problem.id + emailModal.type}
           problem={emailModal.problem}
           type={emailModal.type}
           user={user}
@@ -501,10 +503,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
         <EditProblemModal
           problem={editProblem}
           onClose={() => setEditProblem(null)}
-          onSaved={(updated) => {
-            setEditProblem(null)
-            setDetailProblem(prev => prev?.id === updated.id ? updated : prev)
-          }}
+          onSaved={() => setEditProblem(null)}
         />
       )}
     </div>
@@ -683,7 +682,7 @@ function EmailModal({ problem, type, user, team, onClose }: {
   const teamName = team?.name || 'Our Team'
   const studentName = user?.displayName || 'A student'
   const contactEmail = user?.email || 'student@school.edu'
-  const contact = (problem as unknown as Record<string,string>).submitterContact || ''
+  const contact = problem.submitterContact || ''
 
   const templates = {
     intro: {

@@ -52,29 +52,28 @@ interface Props {
   onEdit?: (p: Problem) => void
   onDelete?: (id: string) => void
   onUnclaim?: (id: string) => void
-  onNoteAdded?: (id: string, notes: Array<{ author: string; text: string; createdAt: number }>) => void
 }
 
-export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim, onNoteAdded }: Props) {
+export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [upvotes, setUpvotes] = useState(problem.upvotes || 0)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
   const [commentText, setCommentText] = useState('')
   const [anonName, setAnonName] = useState('')
-  const [comments, setComments] = useState<Comment[]>(
-    ((problem.comments || []) as unknown[]).filter((c): c is Comment =>
-      typeof c === 'object' && c !== null && 'text' in c
-    )
-  )
   const [submittingComment, setSubmittingComment] = useState(false)
   const [commentError, setCommentError] = useState('')
   const [noteText, setNoteText] = useState('')
-  const [notes, setNotes] = useState(problem.internalNotes ?? [])
   const [submittingNote, setSubmittingNote] = useState(false)
   const [noteError, setNoteError] = useState('')
 
-  useEffect(() => { setNotes(problem.internalNotes ?? []) }, [problem.internalNotes])
+  // Upvotes, comments, and notes render straight from the live problem prop —
+  // our own writes appear immediately via Firestore latency compensation, and
+  // other users' updates flow in through the parent's snapshot listener.
+  const upvotes = problem.upvotes || 0
+  const comments = ((problem.comments || []) as unknown[]).filter((c): c is Comment =>
+    typeof c === 'object' && c !== null && 'text' in c
+  )
+  const notes = problem.internalNotes ?? []
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -101,12 +100,10 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
     if (voted) return
     setVoted(true)
     recordVote(problem.id)
-    setUpvotes(v => v + 1)
     try {
       await updateDoc(doc(db, 'problems', problem.id), { upvotes: increment(1) })
     } catch {
       setVoted(false)
-      setUpvotes(v => v - 1)
       removeVote(problem.id)
     }
   }
@@ -119,7 +116,6 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
     const c: Comment = { text: commentText.trim(), author, createdAt: Date.now() }
     try {
       await updateDoc(doc(db, 'problems', problem.id), { comments: arrayUnion(c) })
-      setComments(prev => [...prev, c])
       setCommentText('')
     } catch {
       setCommentError('Failed to post comment. Please try again.')
@@ -141,10 +137,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
       // arrayUnion appends atomically — a full-array replace would silently drop
       // a note written by a teammate between this modal opening and saving.
       await updateDoc(doc(db, 'problems', problem.id), { internalNotes: arrayUnion(newNote) })
-      const updated = [...notes, newNote]
-      setNotes(updated)
       setNoteText('')
-      onNoteAdded?.(problem.id, updated)
     } catch {
       setNoteError('Failed to save note. Please try again.')
     } finally {
