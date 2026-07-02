@@ -18,6 +18,9 @@ dist-ssr
 # Claude Code worktrees (created by isolation mode) — never commit
 .claude/worktrees/
 
+# Superpowers plugin runtime state — never commit
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
