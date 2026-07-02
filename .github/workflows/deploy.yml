@@ -3,6 +3,9 @@ name: Deploy React App to GitHub Pages
 on:
   push:
     branches: [main]
+  # Manual trigger — needed to redo a deploy after a transient Pages failure,
+  # since re-running a failed job duplicates the pages artifact and errors.
+  workflow_dispatch:
 
 permissions:
   contents: read
