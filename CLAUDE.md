@@ -38,6 +38,7 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - `lib/teams.ts` (+ `teams.test.ts`) — team grouping logic used by ManageTeamsModal
 - `lib/votes.ts` — localStorage-based one-upvote-per-browser tracking
 - `scripts/seed-problems.mjs` — one-time Firestore seeding script (kept as a utility)
+- `scripts/backup-problems.mjs` / `scripts/restore-problems.mjs` — dump and reload the `problems` collection (see Resetting the bank)
 
 ## Backend Services
 
@@ -56,6 +57,25 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - `config/superusers { emails: [] }` — read: authenticated; write: disabled (edit in Firebase console only)
 
 > ⚠️ Known gaps: the rules trust any Google account as "authenticated" (domain check is client-side only), anonymous users can update most problem fields, and team notes / submitter contact info are world-readable on the problem doc. Hardening is planned — see the Security section in TODO.md.
+
+## Resetting the bank
+To empty the `problems` collection (e.g. clearing demo data before handing the site to real users):
+
+```
+npm run problems:clear
+```
+
+This backs up every problem to `backups/problems-<timestamp>.json` first, then deletes the collection.
+Deleting requires Firebase CLI admin credentials — if they have expired, run `firebase login --reauth` first.
+
+To put problems back, all or in part:
+
+```
+npm run problems:restore -- backups/problems-<timestamp>.json [docId ...]
+```
+
+Restores preserve the original document ids. `backups/` is gitignored because the dumps contain
+submitter contact emails — do not commit them.
 
 ## Super User Role
 - Super users (teachers) are defined by email in Firestore at `config/superusers { emails: [] }`

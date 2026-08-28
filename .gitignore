@@ -21,6 +21,9 @@ dist-ssr
 # Superpowers plugin runtime state — never commit
 .superpowers/
 
+# Firestore problem backups — contain submitter contact emails, never commit
+backups/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

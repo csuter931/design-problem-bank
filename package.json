@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
+    "problems:backup": "node scripts/backup-problems.mjs",
+    "problems:restore": "node scripts/restore-problems.mjs",
+    "problems:clear": "node scripts/backup-problems.mjs && firebase firestore:delete problems --recursive --force --project dawson-problem-bank-24a9c"
   },
   "dependencies": {
     "firebase": "^12.11.0",
