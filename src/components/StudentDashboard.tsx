@@ -416,9 +416,19 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                 <EmptyState icon="👥" title="Join a team first" desc="Create or join a team to see your team's claimed problems here." />
               ) : tabProblems[tab].length === 0 ? (
                 <EmptyState
-                  icon={tab === 'available' ? '✅' : tab === 'mine' ? '🔍' : tab === 'solved' ? '🏆' : '📭'}
-                  title={tab === 'available' ? 'All problems claimed!' : tab === 'mine' ? 'No active problems' : tab === 'solved' ? 'No solved problems yet' : 'No problems yet'}
-                  desc={tab === 'mine' ? 'Browse Available to find a problem to tackle.' : ''}
+                  icon={tab === 'available' ? (problems.length === 0 ? '📭' : '✅') : tab === 'mine' ? '🔍' : tab === 'solved' ? '🏆' : '📭'}
+                  title={
+                    tab === 'available'
+                      ? problems.length === 0 ? 'No problems yet' : 'All problems claimed!'
+                      : tab === 'mine' ? 'No active problems'
+                      : tab === 'solved' ? 'No solved problems yet'
+                      : 'No problems yet'
+                  }
+                  desc={
+                    tab === 'available' && problems.length === 0
+                      ? 'Problems submitted from the gallery will show up here.'
+                      : tab === 'mine' ? 'Browse Available to find a problem to tackle.' : ''
+                  }
                 />
               ) : (
                 tabProblems[tab].map(p => (

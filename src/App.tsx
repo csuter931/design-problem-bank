@@ -381,7 +381,11 @@ function App() {
           {loading ? (
             <div className="text-center py-16 text-white/40">Loading problems…</div>
           ) : visible.length === 0 ? (
-            <div className="text-center py-16 text-white/40">No problems match your filter.</div>
+            <div className="text-center py-16 text-white/40">
+              {problems.length === 0
+                ? 'No problems yet — be the first to submit one.'
+                : 'No problems match your filter.'}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {visible.map(p => <ProblemCard key={p.id} problem={p} onSelect={p => setSelectedId(p.id)} />)}
