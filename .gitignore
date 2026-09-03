@@ -34,3 +34,14 @@ backups/
 *.njsproj
 *.sln
 *.sw?
+
+# Dawson brand manual — institutional asset, keep out of the public repo
+Dawson Brand Manual*.pdf
+brand/
+
+# Firebase emulator runtime artifacts
+firestore-debug.log
+ui-debug.log
+database-debug.log
+firebase-debug.log
+.firebase/

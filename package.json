@@ -11,7 +11,12 @@
     "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
     "problems:backup": "node scripts/backup-problems.mjs",
     "problems:restore": "node scripts/restore-problems.mjs",
-    "problems:clear": "node scripts/backup-problems.mjs && firebase firestore:delete problems --recursive --force --project dawson-problem-bank-24a9c"
+    "problems:clear": "node scripts/backup-problems.mjs && firebase firestore:delete problems --recursive --force --project dawson-problem-bank-24a9c",
+    "test:rules": "firebase emulators:exec --only firestore \"node --test --experimental-strip-types tests/rules/*.test.ts\"",
+    "emulators": "firebase emulators:start --only firestore",
+    "emulators:seed": "node scripts/seed-emulator.mjs",
+    "dev:emulator": "vite --mode emulator",
+    "problems:backfill": "node scripts/backfill-approved.mjs"
   },
   "dependencies": {
     "firebase": "^12.11.0",
@@ -21,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

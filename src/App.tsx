@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { collection, orderBy, query, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
+import { collection, orderBy, query, where, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { SubmitWizard } from '@/components/SubmitWizard'
@@ -210,6 +210,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [view, setView] = useState<'gallery' | 'student'>(() => {
     // Auto-navigate to student dashboard after Google OAuth redirect
@@ -223,14 +224,23 @@ function App() {
   // initializers in dev, which would eat the flag before the real render.
   useEffect(() => { localStorage.removeItem('reopenStudentPortal') }, [])
 
-  // Load from Firestore in real-time
+  // Load from Firestore in real-time. Only approved problems are public — the
+  // rules reject any query that doesn't carry this where clause, and the
+  // approved+createdAt pair is backed by a composite index (firestore.indexes.json).
   useEffect(() => {
-    const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
+    const q = query(collection(db, 'problems'), where('approved', '==', true), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(q, (snap) => {
       const firestoreProblems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Problem))
       setProblems(firestoreProblems)
+      setLoadError(false)
       setLoading(false)
-    }, () => setLoading(false))
+    }, (err) => {
+      // A permission or index error must look like a failure, not an empty
+      // bank — otherwise a rules mistake renders a convincing "No problems yet".
+      console.error('problems listener error:', err)
+      setLoadError(true)
+      setLoading(false)
+    })
     return unsub
   }, [])
 
@@ -380,6 +390,10 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 pb-16 pt-2">
           {loading ? (
             <div className="text-center py-16 text-white/40">Loading problems…</div>
+          ) : loadError ? (
+            <div className="text-center py-16 text-red-300/80">
+              Couldn't load problems. Refresh the page to try again.
+            </div>
           ) : visible.length === 0 ? (
             <div className="text-center py-16 text-white/40">
               {problems.length === 0

@@ -4,6 +4,7 @@ import { doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
+import { isApproved, isRejected } from '@/lib/moderation'
 
 export interface Problem {
   id: string
@@ -29,6 +30,14 @@ export interface Problem {
   priorAttempts?: string
   constraints?: string
   internalNotes?: Array<{ author: string; text: string; createdAt: number }>
+  claimedByUser?: string
+  claimedAt?: number
+  solvedAt?: number
+  // Moderation — see lib/moderation.ts. A missing `approved` reads as pending.
+  approved?: boolean
+  reviewedBy?: string
+  reviewedAt?: number
+  rejectedAt?: number
 }
 
 interface Comment {
@@ -52,9 +61,11 @@ interface Props {
   onEdit?: (p: Problem) => void
   onDelete?: (id: string) => void
   onUnclaim?: (id: string) => void
+  onApprove?: (id: string) => void
+  onReject?: (id: string) => void
 }
 
-export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim }: Props) {
+export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user, onClaim, onEdit, onDelete, onUnclaim, onApprove, onReject }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [voted, setVoted] = useState(() => hasVoted(problem.id))
@@ -93,6 +104,11 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
   }, [lightboxOpen])
 
   const status = problem.status || 'new'
+  // Unapproved problems are only ever reachable by super users (the listeners
+  // filter them out for everyone else). Upvotes, comments, and claims are
+  // hidden until approval — the rules reject those writes on a pending doc.
+  const approved = isApproved(problem)
+  const rejected = isRejected(problem)
   const canSeeNotes = isSuperUser || (!!currentTeam && currentTeam.name === problem.claimedByTeam)
   const canAddNote = canSeeNotes && (isSuperUser || status !== 'solved')
 
@@ -244,6 +260,36 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             {isSuperUser && (
               <div className="bg-amber-500/[0.07] border border-amber-500/25 rounded-xl px-4 py-3">
                 <p className="text-amber-400/70 text-[0.65rem] font-semibold uppercase tracking-wider mb-2">🛡 Super User Controls</p>
+                {!approved && (
+                  <div className={`rounded-lg px-3 py-2 mb-3 text-xs border ${
+                    rejected
+                      ? 'bg-red-500/10 border-red-500/25 text-red-300'
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-200'
+                  }`}>
+                    <p className="font-semibold">
+                      {rejected ? '🚫 Rejected — hidden from the public gallery' : '⏳ Pending review — not yet visible in the public gallery'}
+                    </p>
+                    {problem.submitterContact && (
+                      <p className="mt-1 text-white/70">Contact: {problem.submitterContact}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <button
+                        onClick={() => onApprove?.(problem.id)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/30 transition-colors"
+                      >
+                        ✓ {rejected ? 'Restore & approve' : 'Approve'}
+                      </button>
+                      {!rejected && (
+                        <button
+                          onClick={() => onReject?.(problem.id)}
+                          className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white/70 text-xs font-medium hover:text-white hover:bg-white/[0.10] transition-colors"
+                        >
+                          ✕ Reject
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => onEdit?.(problem)}
@@ -303,20 +349,22 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               </div>
             )}
 
-            {/* Upvote + Claim */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleUpvote}
-                disabled={voted}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                  voted
-                    ? 'bg-emerald-500/25 border-emerald-500/50 text-white cursor-default'
-                    : 'border-white/[0.25] text-white/75 hover:text-white hover:border-white/40'
-                } disabled:opacity-40`}
-              >
-                ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
-              </button>
-            </div>
+            {/* Upvote — approved problems only */}
+            {approved && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleUpvote}
+                  disabled={voted}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    voted
+                      ? 'bg-emerald-500/25 border-emerald-500/50 text-white cursor-default'
+                      : 'border-white/[0.25] text-white/75 hover:text-white hover:border-white/40'
+                  } disabled:opacity-40`}
+                >
+                  ▲ {upvotes} {voted ? 'Upvoted' : 'Upvote'}
+                </button>
+              </div>
+            )}
 
             {/* Internal notes — visible to claiming team or super user */}
             {canSeeNotes && (
@@ -362,8 +410,8 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               </div>
             )}
 
-            {/* Public comments */}
-            <div>
+            {/* Public comments — approved problems only */}
+            {approved && <div>
               <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
                 Comments ({comments.length})
               </h3>
@@ -403,7 +451,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   </button>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
 
           {/* Footer */}
@@ -411,7 +459,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
             <button onClick={onClose} className="px-4 py-2 text-sm text-white/65 hover:text-white transition-colors">
               Close
             </button>
-            {onClaim && (problem.status || 'new') === 'new' && (
+            {onClaim && approved && (problem.status || 'new') === 'new' && (
               currentTeam ? (
                 <button
                   onClick={() => { onClaim(problem.id); onClose() }}

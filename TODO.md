@@ -1,14 +1,27 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-07-02
+Last updated: 2026-09-03
 
-## Security — Firestore rules hardening (next cycle)
-Findings from the 2026-07-02 code review. The client code is ready for these; the fixes belong in `firestore.rules` (deploy with `firebase deploy --only firestore:rules`):
-- [ ] **Anonymous problem updates are wide open** — rules only fence off `internalNotes`; anyone can rewrite title/status/claims or wipe comments via a REST call. Restrict unauthenticated updates to the two shapes the client actually uses: `upvotes` increment and `comments` arrayUnion.
-- [ ] **"Authenticated" means any Google account** — the Dawson-domain check is client-side only. Enforce `@dawsonschool.org` / `@dawsonstudents.org` in the rules (e.g. `request.auth.token.email.matches(...)`) so deletes, team writes, and notes edits truly require a Dawson account.
-- [ ] **Team notes + submitter contact are world-readable** — they live on the public problem doc, so every anonymous visitor downloads them. Move `internalNotes` (and possibly `submitterContact`) to a subcollection with restricted read rules.
-- [ ] **Super-user team delete needs a rules path** — `teams` delete is own-doc only, so ManageTeamsModal's delete fails for other members' docs (the client now fails cleanly without half-completing). Add a superuser clause to the teams rules.
-- [ ] After deploying rule changes, retest: anonymous upvote/comment, submit wizard, claim/status flows, super-user edit/delete/unclaim, Manage Teams delete.
+## Phase 1 — Rules hardening + moderation: BUILT on `dev`, NOT YET DEPLOYED
+Code, rules, and tests are complete on the `dev` branch (`npm run test:rules` — 50 passing). What remains is the production rollout, which has a strict order because the new client works under the old rules but the old client does not work under the new rules. **Follow "Deploy order for rules changes" in CLAUDE.md.** Pre-flight items that need a human:
+- [ ] **Confirm every entry in `config/superusers.emails` is lowercase** (Firebase console). The rule lowercases the token email but cannot lowercase the stored list; one capital letter locks that teacher out of approve/edit/delete/Manage Teams. The dashboard now shows a red banner if this happens, but check first.
+- [ ] Decide the backfill value: `--apply` (all existing problems become pending → **public gallery is empty until you approve them**) or `--apply --approve-all` (everything stays visible). The plan's decision was pending; the flag keeps it reversible at run time.
+- [ ] Deploy indexes, wait for **Enabled**, run the backfill, merge to main, verify live under the old rules, then deploy rules at a low-traffic hour and re-verify (checklist in CLAUDE.md).
+- [ ] Sign in once with a `@dawsonstudents.org` account after the rules deploy — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production.
+- [ ] Delete the test problems; remove this section once verified.
+
+### Done in Phase 1 (2026-09-03)
+- [x] Anonymous updates narrowed to exactly two shapes (upvote +1, single validated comment append), and only on approved docs
+- [x] Dawson domain enforced in the rules for every authenticated path (with `email_verified`)
+- [x] Delete is super-user only; super-user team delete has a rules path
+- [x] Moderation gate: public create forces `approved:false`; read is approved-only; Pending tab with Approve / soft Reject; Export JSON replaces the locked-out backup script
+- [x] Emulator rules test suite (`tests/rules/`), local emulator dev mode (`npm run dev:emulator`), backfill script
+
+## Security — still open after Phase 1
+- [ ] **Team notes + submitter contact are readable by any Dawson account** — better than world-readable, but not private. Firestore has no field-level read rules; move `internalNotes` and `submitterContact` to `problems/{id}/private/detail` with a Dawson/team-scoped read rule. Touches the wizard write path and adds a listener, so it is its own release. The migration needs write access the hardened rules deny — use a self-expiring rules clause (`request.time < timestamp.date(...)`) that can only *remove* those fields.
+- [ ] **Team ownership is not enforced** — any Dawson student can change status on any approved problem, not just their own team's. Needs `claimedByTeam` to be checked against the caller's `teams/{uid}` doc in the rules.
+- [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
+- [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
 
 ## Before User Launch
 - [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others

@@ -152,6 +152,9 @@ export function SubmitWizard({ onClose }: WizardProps) {
         status: 'new',
         upvotes: 0,
         comments: [],
+        // Moderation gate — every public submission enters the teacher review
+        // queue. firestore.rules rejects a create with any other value.
+        approved: false,
         createdAt: Date.now(),
       })
       setDone(true)
@@ -181,7 +184,10 @@ export function SubmitWizard({ onClose }: WizardProps) {
           <div className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center">
             <div className="text-6xl">🎉</div>
             <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Problem Submitted!</h2>
-            <p className="text-white/55 text-sm leading-relaxed">Thank you for contributing to our design problem bank. A student team may reach out to learn more.</p>
+            <p className="text-white/55 text-sm leading-relaxed">
+              Thank you for contributing to our design problem bank. A teacher will review your
+              submission before it appears in the gallery, and a student team may reach out to learn more.
+            </p>
             <button onClick={onClose} className="mt-2 px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
               Back to Gallery
             </button>
@@ -379,6 +385,10 @@ export function SubmitWizard({ onClose }: WizardProps) {
                     <label className={labelCls}>Can you offer any resources? <span className="text-white/30 font-normal">(optional)</span></label>
                     <textarea value={resources} onChange={e => setResources(e.target.value)} rows={2} placeholder='e.g., "I can give students access to the workshop"' className={`${inputCls()} resize-none`} />
                   </div>
+                  <p className="text-white/50 text-xs bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2.5">
+                    ⏳ Submissions are reviewed by a teacher before they appear in the public gallery.
+                    Your contact details are only shared with Dawson students and staff.
+                  </p>
                 </>
               )}
             </div>

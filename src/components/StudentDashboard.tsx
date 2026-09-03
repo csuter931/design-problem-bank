@@ -10,11 +10,13 @@ import { ManageTeamsModal } from '@/components/ManageTeamsModal'
 import { EditProblemModal } from '@/components/EditProblemModal'
 import { AnimatePresence } from 'framer-motion'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
+import { partitionByReview } from '@/lib/moderation'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
 
-type Tab = 'available' | 'mine' | 'solved' | 'all'
+// 'pending' is the super-user review queue; it is only offered when isSuperUser.
+type Tab = 'available' | 'mine' | 'solved' | 'all' | 'pending'
 type AuthView = 'loading' | 'signin' | 'dashboard'
 
 const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary focus:bg-white/[0.09] transition-colors'
@@ -39,6 +41,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
   // Super user state
   const [isSuperUser, setIsSuperUser] = useState(false)
+  const [superUserDenied, setSuperUserDenied] = useState(false)
   const [manageTeamsOpen, setManageTeamsOpen] = useState(false)
   const [editProblem, setEditProblem] = useState<Problem | null>(null)
 
@@ -79,14 +82,31 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     return unsub
   }, [])
 
-  // Problems listener — prepend samples so they always appear
+  // Problems listener. Students (and signed-out visitors) may only list
+  // approved problems — the rules reject an unconstrained query outright.
+  // Super users swap to the unfiltered query so pending submissions appear
+  // for review. Keyed on isSuperUser so it cannot race the async super-user
+  // check in the auth listener above: it simply re-subscribes when that flips.
   useEffect(() => {
-    const q = query(collection(db, 'problems'), orderBy('createdAt', 'desc'))
+    const base = collection(db, 'problems')
+    const q = isSuperUser
+      ? query(base, orderBy('createdAt', 'desc'))
+      : query(base, where('approved', '==', true), orderBy('createdAt', 'desc'))
+    setSuperUserDenied(false)
     return onSnapshot(q, snap => {
-      const live = snap.docs.map(d => ({ id: d.id, ...d.data() } as Problem))
-      setProblems(live)
+      setProblems(snap.docs.map(d => ({ id: d.id, ...d.data() } as Problem)))
+    }, err => {
+      console.error('problems listener error:', err)
+      // The client-side super-user check passed but the rules rejected the
+      // unfiltered query: almost always a capitalised email in config/superusers.
+      if (isSuperUser) setSuperUserDenied(true)
     })
-  }, [])
+  }, [isSuperUser])
+
+  // The Pending tab only exists for super users; fall back if that flips off.
+  useEffect(() => {
+    if (!isSuperUser && tab === 'pending') setTab('available')
+  }, [isSuperUser, tab])
 
   async function loadExistingTeams() {
     const teamsSnap = await getDocs(collection(db, 'teams'))
@@ -137,7 +157,13 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     const othersOnTeam = teamSnap.docs.some(d => d.id !== user.uid)
 
     // Active (claimed / in-progress) problems still stamped with this name.
-    const claimedSnap = await getDocs(query(collection(db, 'problems'), where('claimedByTeam', '==', oldName)))
+    // The approved clause is required: the rules reject any student list
+    // query that could match an unapproved doc (equality-only, so no index).
+    const claimedSnap = await getDocs(query(
+      collection(db, 'problems'),
+      where('claimedByTeam', '==', oldName),
+      where('approved', '==', true),
+    ))
     const active = claimedSnap.docs.filter(d => ['claimed', 'inprogress'].includes(d.data().status))
 
     if (othersOnTeam || active.length === 0) {
@@ -242,25 +268,74 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
     }
   }
 
+  // ── Moderation (super user only — the rules enforce it) ──
+  async function approveProblem(id: string) {
+    try {
+      await updateDoc(doc(db, 'problems', id), {
+        approved: true,
+        reviewedBy: user?.email || '',
+        reviewedAt: Date.now(),
+        rejectedAt: deleteField(),   // a restored rejection must not still read as rejected
+      })
+    } catch (e) {
+      console.error('Failed to approve problem:', e)
+      alert('Failed to approve problem. Please try again.')
+    }
+  }
+
+  // Reject is soft: the doc stays (hidden) and can be restored with Approve.
+  // Delete remains the separate, explicit action in the detail modal.
+  async function rejectProblem(id: string) {
+    try {
+      await updateDoc(doc(db, 'problems', id), {
+        approved: false,
+        reviewedBy: user?.email || '',
+        reviewedAt: Date.now(),
+        rejectedAt: Date.now(),
+      })
+    } catch (e) {
+      console.error('Failed to reject problem:', e)
+      alert('Failed to reject problem. Please try again.')
+    }
+  }
+
+  // Backend-free backup. The REST backup script is locked out by the rules,
+  // so this is now the way to dump the collection. Same shape as
+  // scripts/backup-problems.mjs (`__id` + fields) so restore-problems.mjs can read it.
+  function exportProblems() {
+    const rows = problems.map(({ id, ...rest }) => ({ __id: id, ...rest }))
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `problems-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   // ── Filtered lists ───────────────────────────────────────
-  const available = problems.filter(p =>
+  // For students `problems` is already approved-only (the listener filters);
+  // for super users it also carries the review queue, so split it here and
+  // keep the four regular tabs on the approved set.
+  const { approved: approvedProblems, pending, rejected } = partitionByReview(problems)
+  const available = approvedProblems.filter(p =>
     (p.status || 'new') !== 'solved' && (!team || p.claimedByTeam !== team.name)
   )
-  const mine = problems.filter(p =>
+  const mine = approvedProblems.filter(p =>
     !!team && p.claimedByTeam === team.name && p.status !== 'solved'
   )
-  const solved = problems.filter(p => p.status === 'solved')
+  const solved = approvedProblems.filter(p => p.status === 'solved')
 
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'available', label: '🟢 Available', count: available.length },
     { id: 'mine', label: '📌 My Team\'s', count: mine.length },
     { id: 'solved', label: '🟣 Solved', count: solved.length },
-    { id: 'all', label: '📚 All', count: problems.length },
+    { id: 'all', label: '📚 All', count: approvedProblems.length },
+    ...(isSuperUser ? [{ id: 'pending' as Tab, label: '⏳ Pending', count: pending.length }] : []),
   ]
 
   const tabProblems: Record<Tab, Problem[]> = {
-    available, mine, solved, all: problems,
+    available, mine, solved, all: approvedProblems, pending,
   }
 
   // Derive the open detail modal from the live list so it receives real-time
@@ -291,12 +366,21 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           {user && (
             <div className="flex items-center gap-3">
               {isSuperUser && (
-                <button
-                  onClick={() => setManageTeamsOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/25 transition-colors"
-                >
-                  👥 Manage Teams
-                </button>
+                <>
+                  <button
+                    onClick={exportProblems}
+                    title="Download every problem (including pending) as JSON"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white/70 text-xs font-medium hover:text-white hover:bg-white/[0.10] transition-colors"
+                  >
+                    ⬇ Export JSON
+                  </button>
+                  <button
+                    onClick={() => setManageTeamsOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/25 transition-colors"
+                  >
+                    👥 Manage Teams
+                  </button>
+                </>
               )}
               {team && (
                 <span className="text-xs px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary font-medium">
@@ -368,6 +452,20 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
         {authView === 'dashboard' && user && (
           <div className="flex flex-col gap-6">
 
+            {/* Super-user self-diagnosis: the client check passed but the rules
+                rejected the unfiltered query. Almost always a capitalised email
+                in config/superusers — the rule lowercases the token, not the list. */}
+            {superUserDenied && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-4">
+                <p className="text-red-300 font-medium text-sm">Super-user access was rejected by the database</p>
+                <p className="text-white/65 text-xs mt-1 leading-relaxed">
+                  Your email is listed in config/superusers, but Firestore denied the super-user query, so approve,
+                  edit, delete, and Manage Teams will fail. The stored email must be entirely lowercase — check the
+                  entry in the Firebase console.
+                </p>
+              </div>
+            )}
+
             {/* Team banner if no team */}
             {!team && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
@@ -403,7 +501,10 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                     tab === t.id ? 'bg-primary text-white shadow' : 'text-white/65 hover:text-white'
                   }`}>
                   {t.label}
-                  <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-white/20' : 'bg-white/[0.08]'}`}>
+                  <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full ${
+                    t.id === 'pending' && t.count > 0 ? 'bg-amber-500/40 text-amber-100 font-semibold'
+                    : tab === t.id ? 'bg-white/20' : 'bg-white/[0.08]'
+                  }`}>
                     {t.count}
                   </span>
                 </button>
@@ -412,21 +513,63 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
             {/* Problem list */}
             <div className="flex flex-col gap-3">
-              {tab === 'mine' && !team ? (
+              {tab === 'pending' ? (
+                /* Review queue — pending first, then a restorable Rejected section */
+                <>
+                  {pending.length === 0 && (
+                    <EmptyState icon="✅" title="Nothing to review" desc="New submissions from the gallery will appear here for approval." />
+                  )}
+                  {pending.map(p => (
+                    <ProblemListItem
+                      key={p.id}
+                      problem={p}
+                      context="pending"
+                      team={team}
+                      onClaim={claimProblem}
+                      onUpdateStatus={updateStatus}
+                      onViewDetail={p => setDetailId(p.id)}
+                      onEmailTemplate={(type) => setEmailModal({ problem: p, type })}
+                      onApprove={approveProblem}
+                      onReject={rejectProblem}
+                    />
+                  ))}
+                  {rejected.length > 0 && (
+                    <>
+                      <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mt-6 mb-1">
+                        Rejected ({rejected.length}) — hidden from the gallery
+                      </h3>
+                      {rejected.map(p => (
+                        <ProblemListItem
+                          key={p.id}
+                          problem={p}
+                          context="rejected"
+                          team={team}
+                          onClaim={claimProblem}
+                          onUpdateStatus={updateStatus}
+                          onViewDetail={p => setDetailId(p.id)}
+                          onEmailTemplate={(type) => setEmailModal({ problem: p, type })}
+                          onApprove={approveProblem}
+                          onReject={rejectProblem}
+                        />
+                      ))}
+                    </>
+                  )}
+                </>
+              ) : tab === 'mine' && !team ? (
                 <EmptyState icon="👥" title="Join a team first" desc="Create or join a team to see your team's claimed problems here." />
               ) : tabProblems[tab].length === 0 ? (
                 <EmptyState
-                  icon={tab === 'available' ? (problems.length === 0 ? '📭' : '✅') : tab === 'mine' ? '🔍' : tab === 'solved' ? '🏆' : '📭'}
+                  icon={tab === 'available' ? (approvedProblems.length === 0 ? '📭' : '✅') : tab === 'mine' ? '🔍' : tab === 'solved' ? '🏆' : '📭'}
                   title={
                     tab === 'available'
-                      ? problems.length === 0 ? 'No problems yet' : 'All problems claimed!'
+                      ? approvedProblems.length === 0 ? 'No problems yet' : 'All problems claimed!'
                       : tab === 'mine' ? 'No active problems'
                       : tab === 'solved' ? 'No solved problems yet'
                       : 'No problems yet'
                   }
                   desc={
-                    tab === 'available' && problems.length === 0
-                      ? 'Problems submitted from the gallery will show up here.'
+                    tab === 'available' && approvedProblems.length === 0
+                      ? 'Problems approved by a teacher will show up here.'
                       : tab === 'mine' ? 'Browse Available to find a problem to tackle.' : ''
                   }
                 />
@@ -461,6 +604,8 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             user={user}
             onClaim={claimProblem}
             onEdit={setEditProblem}
+            onApprove={approveProblem}
+            onReject={rejectProblem}
             onDelete={async (id) => {
               try {
                 await deleteDoc(doc(db, 'problems', id))
@@ -521,14 +666,16 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 }
 
 // ── ProblemListItem ──────────────────────────────────────
-function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onViewDetail, onEmailTemplate }: {
+function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onViewDetail, onEmailTemplate, onApprove, onReject }: {
   problem: Problem
-  context: Tab
+  context: Tab | 'rejected'
   team: Team | null
   onClaim: (id: string) => void
   onUpdateStatus: (id: string, status: 'inprogress' | 'solved') => void
   onViewDetail: (p: Problem) => void
   onEmailTemplate: (type: 'intro' | 'update' | 'solved') => void
+  onApprove?: (id: string) => void
+  onReject?: (id: string) => void
 }) {
   const status = problem.status || 'new'
   const isMine = problem.claimedByTeam === team?.name
@@ -547,6 +694,16 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         {/* Body */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap gap-1 mb-1.5">
+            {context === 'pending' && (
+              <span className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-200 border-amber-500/40">
+                ⏳ PENDING REVIEW
+              </span>
+            )}
+            {context === 'rejected' && (
+              <span className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full border bg-red-500/15 text-red-300 border-red-500/30">
+                🚫 REJECTED
+              </span>
+            )}
             <span className={`text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full border ${STATUS_COLORS[status]}`}>
               {STATUS_LABELS[status]}
             </span>
@@ -594,7 +751,17 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         {context === 'solved' && isMine && (
           <button onClick={() => onEmailTemplate('solved')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Share Results</button>
         )}
-        {(context === 'all' || context === 'solved') && (
+        {(context === 'pending' || context === 'rejected') && (
+          <>
+            <button onClick={() => onApprove?.(problem.id)} className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/30 transition-colors">
+              ✓ {context === 'rejected' ? 'Restore & Approve' : 'Approve'}
+            </button>
+            {context === 'pending' && (
+              <button onClick={() => onReject?.(problem.id)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✕ Reject</button>
+            )}
+          </>
+        )}
+        {(context === 'all' || context === 'solved' || context === 'pending' || context === 'rejected') && (
           <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">View details →</button>
         )}
       </div>

@@ -2,26 +2,120 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Config: authenticated users can read (for superuser check), no client writes
+    // ── Identity ──────────────────────────────────────────────────────────
+    // A Dawson account: signed in, with a verified email on one of the two
+    // school domains. Every authenticated path routes through here, so the
+    // domain restriction is enforced server-side (not just in the browser).
+    // email_verified is always true for Google-provider tokens; the check
+    // guards against an unverified email/password account ever being enabled.
+    function isDawson() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower()
+             .matches('^[^@]+@(dawsonschool|dawsonstudents)[.]org$');
+    }
+
+    // Teachers, listed by email in config/superusers.emails. The stored
+    // entries MUST be lowercase — the token email is lowercased here, but a
+    // stored array cannot be. Anonymous traffic short-circuits inside
+    // isDawson(), so the public gallery never pays for this get().
+    function isSuperUser() {
+      return isDawson()
+        && request.auth.token.email.lower() in
+             get(/databases/$(database)/documents/config/superusers).data.emails;
+    }
+
+    // ── Diff helpers ──────────────────────────────────────────────────────
+    // affectedKeys() includes keys removed via deleteField(), so an unclaim
+    // (status + three deletes) is judged against the same hasOnly() list.
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function onlyChanged(keys) { return changedKeys().hasOnly(keys); }
+    function isApprovedNow() { return resource.data.get('approved', false) == true; }
+
     match /config/{document} {
-      allow read: if request.auth != null;
+      // get() inside rules bypasses rules, so isSuperUser() works regardless.
+      allow read: if isDawson();
       allow write: if false;
     }
 
-    // Problems: public read/create; update allowed if unauthenticated only when not touching internalNotes
     match /problems/{problemId} {
-      allow read, create: if true;
-      allow update: if request.auth != null ||
-        !('internalNotes' in request.resource.data.diff(resource.data).affectedKeys());
-      allow delete: if request.auth != null;
+      // get and list are split deliberately. `list` uses plain field access so
+      // Firestore's query analyzer can prove where('approved','==',true)
+      // satisfies it; `get` uses .get(..., false) so a doc missing the field
+      // fails closed. Super users may read everything, including pending.
+      allow get:  if isSuperUser() || resource.data.get('approved', false) == true;
+      allow list: if isSuperUser() || resource.data.approved == true;
+
+      // THE GATE: a public submission is always born unapproved, in status
+      // 'new', with no votes, comments, claim, or review metadata.
+      function isValidNewProblem() {
+        let d = request.resource.data;
+        return d.approved == false
+          && d.status == 'new'
+          && d.upvotes == 0
+          && d.comments is list && d.comments.size() == 0
+          && d.title is string && d.title.size() > 0 && d.title.size() <= 200
+          && d.description is string && d.description.size() <= 5000
+          && !d.keys().hasAny(['internalNotes', 'claimedByTeam', 'claimedByUser',
+                                'claimedAt', 'solvedAt', 'reviewedBy', 'reviewedAt',
+                                'rejectedAt']);
+      }
+      allow create: if isValidNewProblem();
+
+      // Anonymous write shape 1: exactly +1 on upvotes and nothing else.
+      function isUpvote() {
+        return onlyChanged(['upvotes'])
+          && request.resource.data.upvotes == resource.data.get('upvotes', 0) + 1;
+      }
+
+      // Anonymous write shape 2: append exactly one well-formed comment.
+      // Rules cannot see arrayUnion vs. a wholesale replace, so append-only
+      // is proved structurally: new = old + 1 element, and old ⊆ new.
+      function isValidComment(c) {
+        return c is map
+          && c.keys().hasOnly(['text', 'author', 'createdAt'])
+          && c.text is string && c.text.size() > 0 && c.text.size() <= 2000
+          && c.author is string && c.author.size() > 0 && c.author.size() <= 100
+          && c.createdAt is number;
+      }
+      function isCommentAppend() {
+        let oldC = resource.data.get('comments', []);
+        let newC = request.resource.data.comments;
+        return onlyChanged(['comments'])
+          && newC is list
+          && newC.size() == oldC.size() + 1
+          && newC.size() <= 500
+          && newC.hasAll(oldC)
+          && isValidComment(newC[newC.size() - 1]);
+      }
+
+      // Dawson students: claim, progress, solve, unclaim, and team notes.
+      // .get('status','') (not plain access) so a request that deletes the
+      // status field is denied rather than erroring.
+      function isStudentWorkflow() {
+        return onlyChanged(['status', 'claimedByTeam', 'claimedByUser', 'claimedAt',
+                            'solvedAt', 'internalNotes'])
+          && request.resource.data.get('status', '') in ['new', 'claimed', 'inprogress', 'solved'];
+      }
+
+      allow update: if isSuperUser()
+        || (isDawson() && isApprovedNow() && isStudentWorkflow())
+        || (isApprovedNow() && (isUpvote() || isCommentAppend()));
+
+      allow delete: if isSuperUser();
     }
 
-    // Teams: any authenticated user can read (needed for team list / manage teams)
-    // Write/delete restricted to own document only
     match /teams/{userId} {
-      allow read: if request.auth != null;
-      allow write, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if isDawson();
+      allow create, update: if isDawson()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['name', 'members', 'joinedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60;
+      // Members remove their own slot; super users may dissolve any team.
+      allow delete: if isDawson() && (request.auth.uid == userId || isSuperUser());
     }
-
   }
 }

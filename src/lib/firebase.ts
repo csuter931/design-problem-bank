@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -14,3 +14,12 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
 export const auth = getAuth(app)
+
+// Local testing against the Firestore emulator (`npm run dev:emulator`). Auth
+// still uses real Google sign-in; the emulator accepts the real ID token and
+// evaluates firestore.rules against its claims, so the whole teacher/student
+// flow can be exercised on seeded data without touching production.
+// Guarded by DEV so a production bundle can never pick this up.
+if (import.meta.env.DEV && import.meta.env.VITE_FIRESTORE_EMULATOR === '1') {
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+}
