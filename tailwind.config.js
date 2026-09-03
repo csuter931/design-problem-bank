@@ -8,7 +8,27 @@ export default {
   ],
   theme: {
     extend: {
+      // Dawson School brand palette — Brand Manual Quick Reference 2023.
+      // Primary: blue, carolina, royal, charcoal, silver. Secondary: seagreen,
+      // alabaster, purple, orange. navy-* are shades of Royal Blue used as the
+      // app's dark surfaces (900 page, 800 modals, 700 gallery section).
+      fontFamily: {
+        sans: ['Nunito', 'Avenir', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Crimson Pro"', '"Minion Pro"', 'Georgia', 'serif'],
+      },
       colors: {
+        dawson: {
+          blue: '#0033A0',
+          carolina: '#7BB0D4',
+          royal: '#00205B',
+          charcoal: '#413C38',
+          silver: '#BFBFBF',
+          seagreen: '#22ACA3',
+          alabaster: '#EDEAE0',
+          purple: '#4D1551',
+          orange: '#FF9966',
+          navy: { 900: '#001238', 800: '#001845', 700: '#00205B' },
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

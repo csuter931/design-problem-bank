@@ -186,7 +186,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
       <div className="fixed inset-0 z-[301] flex items-center justify-center p-4 pointer-events-none">
         <motion.div
           layoutId={`problem-card-${problem.id}`}
-          className="w-full max-w-2xl bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden pointer-events-auto"
+          className="w-full max-w-2xl bg-dawson-navy-800 border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden pointer-events-auto"
           transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Photos */}
@@ -247,7 +247,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   </span>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-white leading-snug" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h2 className="text-xl font-bold text-white leading-snug font-display">
                 {problem.title}
               </h2>
               <p className="text-white/60 text-xs mt-1">
@@ -258,13 +258,13 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
 
             {/* Super user controls */}
             {isSuperUser && (
-              <div className="bg-amber-500/[0.07] border border-amber-500/25 rounded-xl px-4 py-3">
-                <p className="text-amber-400/70 text-[0.65rem] font-semibold uppercase tracking-wider mb-2">🛡 Super User Controls</p>
+              <div className="bg-dawson-orange/[0.07] border border-dawson-orange/25 rounded-xl px-4 py-3">
+                <p className="text-dawson-orange/70 text-[0.65rem] font-semibold uppercase tracking-wider mb-2">🛡 Super User Controls</p>
                 {!approved && (
                   <div className={`rounded-lg px-3 py-2 mb-3 text-xs border ${
                     rejected
                       ? 'bg-red-500/10 border-red-500/25 text-red-300'
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-200'
+                      : 'bg-dawson-orange/15 border-dawson-orange/30 text-dawson-orange'
                   }`}>
                     <p className="font-semibold">
                       {rejected ? '🚫 Rejected — hidden from the public gallery' : '⏳ Pending review — not yet visible in the public gallery'}
@@ -275,7 +275,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     <div className="flex flex-wrap gap-2 mt-2">
                       <button
                         onClick={() => onApprove?.(problem.id)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/30 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-dawson-seagreen/20 border border-dawson-seagreen/40 text-dawson-seagreen text-xs font-semibold hover:bg-dawson-seagreen/30 transition-colors"
                       >
                         ✓ {rejected ? 'Restore & approve' : 'Approve'}
                       </button>
@@ -344,7 +344,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   <span key={c} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-white/[0.12] border border-white/[0.28] text-white/90 capitalize">{c}</span>
                 ))}
                 {problem.disciplines?.map(d => (
-                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-indigo-500/25 border border-indigo-400/50 text-indigo-200 capitalize">{d.replace(/-/g, ' ')}</span>
+                  <span key={d} className="text-[0.7rem] px-2 py-0.5 rounded-full bg-dawson-carolina/25 border border-dawson-carolina/50 text-dawson-carolina capitalize">{d.replace(/-/g, ' ')}</span>
                 ))}
               </div>
             )}
@@ -357,7 +357,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                   disabled={voted}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                     voted
-                      ? 'bg-emerald-500/25 border-emerald-500/50 text-white cursor-default'
+                      ? 'bg-dawson-seagreen/25 border-dawson-seagreen/50 text-white cursor-default'
                       : 'border-white/[0.25] text-white/75 hover:text-white hover:border-white/40'
                   } disabled:opacity-40`}
                 >

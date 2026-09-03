@@ -25,6 +25,17 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - `npm run emulators` / `npm run emulators:seed [email]` / `npm run dev:emulator` — local end-to-end testing against the Firestore emulator with seeded fixtures; the given email (default: the project owner's) becomes the super user. Google sign-in is still real; only Firestore is local. See `scripts/seed-emulator.mjs`
 - `npm run problems:backfill` — one-time `approved` backfill (see Moderation)
 
+## Branding (Dawson School)
+Source of truth: `Dawson Brand Manual_Quick Reference Guide_Updated 2023.pdf` in the repo root — **gitignored, never commit it** (institutional asset). Extract text with `pdftotext` if you need to re-check a value; do not guess colours.
+
+- **Palette** lives in `tailwind.config.js` under `theme.extend.colors.dawson` (`blue #0033A0`, `carolina #7BB0D4`, `royal #00205B`, `charcoal`, `silver`, `seagreen #22ACA3`, `alabaster`, `purple #4D1551`, `orange #FF9966`) plus `navy-900/800/700` — Royal Blue shades used as the page / modal / gallery surfaces. The shadcn-style semantic tokens in `src/index.css` (`--primary` = Dawson Blue, `--accent`/`--ring` = Carolina Blue, `--secondary` = Sea Green) are the same colours as HSL. There is **one dark theme only**; the old light `:root` / `.dark` split is gone.
+- **Semantic colour mapping**: new / approve / upvoted → `dawson-seagreen`; claimed / pending / super-user → `dawson-orange`; in progress / disciplines → `dawson-carolina`; solved → `dawson-purple` (dark, so used as a heavier surface with `text-purple-200`); destructive stays Tailwind `red`. `STATUS_COLORS` in `lib/problemMeta.ts` is the single source for status badges.
+- **Type**: `font-sans` = Nunito (the manual's Google replacement for Avenir), `font-display` = Crimson Pro (replacement for Minion Pro, the "Dawson" wordmark face) — used for headings. Loaded via the Google Fonts `@import` at the top of `src/index.css`. Never reintroduce inline `style={{ fontFamily }}`.
+- **Hero glows** use `rgb(var(--dawson-blue)/…)` and `rgb(var(--dawson-seagreen)/…)` so they can't drift from the palette.
+- **Favicon** (`public/favicon.svg`) is a Dawson Blue tile with the light-bulb mark in Atomic Orange — brand colours, but deliberately *not* the school logo.
+- **Logo**: not yet in the repo. The 💡 emoji in `App.tsx` and `StudentDashboard.tsx` is a placeholder. The manual requires the approved logo files (Employee Resources → Marketing and Branding folder), the reversed-colour version on dark backgrounds, no recolouring, no stretching, and a safety margin equal to the height of "SCHOOL". Contact `marcomm@dawsonschool.org` for brand questions.
+- All text/background pairs were contrast-checked ≥ 5.5:1 (AA) on both navy surfaces; the one failing pair (white on Sea Green, 2.8:1) is not used anywhere — Sea Green is text/border/tint only.
+
 ## Hosting & Deployment
 - Hosted on **GitHub Pages**; repo: **https://github.com/csuter931/design-problem-bank**
 - CI (`.github/workflows/deploy.yml`) runs on every push to `main`: Node 24 → `npm ci` → `npm test` → build → deploy `dist/` to Pages. **A failing test or type error blocks deployment.** Site updates a minute or two after push.

@@ -108,11 +108,11 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-xl bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-xl bg-dawson-navy-800 border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
           <div>
-            <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>✏️ Edit Problem</h2>
+            <h2 className="font-bold text-white text-base font-display">✏️ Edit Problem</h2>
             <p className="text-white/40 text-xs mt-0.5">Super user edit — all fields unlocked</p>
           </div>
           <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>

@@ -80,7 +80,7 @@ function ProblemCard({ problem, onSelect }: {
               </span>
             )}
           </div>
-          <h3 className="font-bold text-white text-base leading-snug mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h3 className="font-bold text-white text-base leading-snug mb-2 font-display">
             {problem.title}
           </h3>
           <p className="text-white/65 text-xs leading-relaxed flex-1 line-clamp-3 mb-4">
@@ -93,7 +93,7 @@ function ProblemCard({ problem, onSelect }: {
                 onClick={handleUpvote}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
                   voted
-                    ? 'text-white bg-emerald-500/30 border border-emerald-500/40 cursor-default'
+                    ? 'text-white bg-dawson-seagreen/30 border border-dawson-seagreen/40 cursor-default'
                     : 'text-white/60 hover:text-white/80 hover:bg-white/[0.06]'
                 }`}
               >
@@ -162,7 +162,7 @@ function CommentPopover({ problem, onClose }: { problem: Problem; onClose: () =>
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ duration: 0.15 }}
-        className="relative w-full max-w-sm bg-[#131926] border border-white/[0.12] rounded-2xl shadow-2xl p-4 flex flex-col gap-3"
+        className="relative w-full max-w-sm bg-dawson-navy-800 border border-white/[0.12] rounded-2xl shadow-2xl p-4 flex flex-col gap-3"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
@@ -272,31 +272,31 @@ function App() {
       </AnimatePresence>
 
       {/* ── HERO (contains brand + stats + CTA) ────────────── */}
-      <section className="relative bg-[#0b0f1a] text-white px-6 pt-10 pb-16 overflow-hidden">
-        <div className="pointer-events-none absolute -top-[20%] -left-[15%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(43,56,150,0.45)_0%,transparent_70%)]" />
-        <div className="pointer-events-none absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,106,96,0.35)_0%,transparent_70%)]" />
+      <section className="relative bg-dawson-navy-900 text-white px-6 pt-10 pb-16 overflow-hidden">
+        <div className="pointer-events-none absolute -top-[20%] -left-[15%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgb(var(--dawson-blue)/0.55)_0%,transparent_70%)]" />
+        <div className="pointer-events-none absolute -bottom-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,rgb(var(--dawson-seagreen)/0.30)_0%,transparent_70%)]" />
 
         {/* Top nav row */}
         <div className="relative z-10 max-w-5xl mx-auto flex items-center justify-between mb-14">
           <div className="flex items-center gap-3">
             <span className="text-3xl">💡</span>
             <div>
-              <h1 className="font-bold text-lg tracking-tight text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h1 className="font-bold text-lg tracking-tight text-white leading-none font-display">
                 Design Problem Bank
               </h1>
-              <p className="text-xs text-white/65 mt-0.5">Real problems. Creative solutions.</p>
+              <p className="text-xs text-white/65 mt-0.5">Dawson School · Real problems. Creative solutions.</p>
             </div>
           </div>
           <div className="flex items-center gap-5 text-sm text-white/65">
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
-            <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
-            <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
+            <span><span className="text-dawson-seagreen font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
+            <span><span className="text-purple-300 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
           </div>
         </div>
 
         {/* Hero copy */}
         <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <h2 className="text-5xl font-extrabold tracking-tight leading-[1.15] mb-5" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-5xl font-extrabold tracking-tight leading-[1.15] mb-5 font-display">
             Got a problem that needs solving?
           </h2>
           <p className="text-lg text-white/65 leading-relaxed mb-10 max-w-lg mx-auto">
@@ -321,7 +321,7 @@ function App() {
       </section>
 
       {/* ── FILTER + CAROUSEL ──────────────────────────────── */}
-      <section id="gallery" className="bg-[#141824] border-t border-white/[0.06]">
+      <section id="gallery" className="bg-dawson-navy-700 border-t border-white/[0.06]">
 
         {/* Filter bar */}
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-wrap gap-3 items-center">
@@ -353,12 +353,12 @@ function App() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
-            className="px-3 py-[0.5rem] rounded-[11px] bg-[#141824] border border-white/[0.15] text-white/75 text-sm cursor-pointer"
+            className="px-3 py-[0.5rem] rounded-[11px] bg-dawson-navy-700 border border-white/[0.15] text-white/75 text-sm cursor-pointer"
           >
-            <option value="newest" className="bg-[#141824]">Newest first</option>
-            <option value="oldest" className="bg-[#141824]">Oldest first</option>
-            <option value="upvotes" className="bg-[#141824]">Most upvoted</option>
-            <option value="severity" className="bg-[#141824]">Highest severity</option>
+            <option value="newest" className="bg-dawson-navy-700">Newest first</option>
+            <option value="oldest" className="bg-dawson-navy-700">Oldest first</option>
+            <option value="upvotes" className="bg-dawson-navy-700">Most upvoted</option>
+            <option value="severity" className="bg-dawson-navy-700">Highest severity</option>
           </select>
         </div>
 

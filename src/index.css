@@ -1,71 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+/* Dawson brand fonts (Brand Manual 2023, Google-font replacements):
+   Crimson Pro stands in for Minion Pro (the "Dawson" wordmark face) and is
+   used for display headings; Nunito stands in for Avenir and is the body face. */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* Single dark theme built on Dawson Royal Blue. The app has no light mode —
+     the manual approves the reversed logo on blue/dark backgrounds, and every
+     component is written white-on-dark. Brand hex values live in
+     tailwind.config.js (theme.colors.dawson); these are the same colours as HSL
+     for the shadcn-style semantic tokens. */
   :root {
-    /* shadcn CSS variables — mapped to Dawson Problem Bank palette */
-    --background: 228 100% 99%;
-    --foreground: 214 56% 11%;
+    /* Raw brand channels for arbitrary-value utilities, e.g.
+       bg-[radial-gradient(...,rgb(var(--dawson-blue)/0.5),...)] */
+    --dawson-blue: 0 51 160;        /* #0033A0 Dawson Blue */
+    --dawson-seagreen: 34 172 163;  /* #22ACA3 Light Sea Green */
 
-    --card: 0 0% 100%;
-    --card-foreground: 214 56% 11%;
+    --background: 220 100% 11%;     /* navy-900 #001238 — page */
+    --foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 214 56% 11%;
+    --card: 220 100% 14%;           /* navy-800 #001845 — modals */
+    --card-foreground: 0 0% 100%;
 
-    --primary: 232 57% 37%;
+    --popover: 220 100% 14%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 221 100% 31%;        /* Dawson Blue #0033A0 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 100% 21%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 176 67% 40%;       /* Light Sea Green #22ACA3 */
+    --secondary-foreground: 220 100% 18%;
 
-    --muted: 224 46% 93%;
-    --muted-foreground: 234 13% 44%;
+    --muted: 220 60% 20%;
+    --muted-foreground: 0 0% 75%;   /* Silver #BFBFBF */
 
-    --accent: 174 100% 21%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 205 51% 66%;          /* Carolina Blue #7BB0D4 */
+    --accent-foreground: 220 100% 18%;
 
     --destructive: 0 73% 41%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 12% 76%;
-    --input: 240 12% 76%;
-    --ring: 232 57% 37%;
+    --border: 220 40% 28%;
+    --input: 220 40% 28%;
+    --ring: 205 51% 66%;            /* Carolina Blue */
 
     --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222 47% 7%;
-    --foreground: 0 0% 100%;
-
-    --card: 224 35% 12%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 224 35% 12%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 232 57% 37%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 174 100% 21%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 224 30% 18%;
-    --muted-foreground: 240 10% 60%;
-
-    --accent: 174 100% 21%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 224 30% 20%;
-    --input: 224 30% 20%;
-    --ring: 232 57% 37%;
   }
 }
 
@@ -74,8 +56,7 @@
     @apply border-border box-border;
   }
   body {
-    @apply bg-background text-foreground m-0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply bg-background text-foreground m-0 font-sans;
   }
 }
 

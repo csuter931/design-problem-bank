@@ -177,13 +177,13 @@ export function SubmitWizard({ onClose }: WizardProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-xl bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-xl bg-dawson-navy-800 border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
         {done ? (
           /* Success */
           <div className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center">
             <div className="text-6xl">🎉</div>
-            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Problem Submitted!</h2>
+            <h2 className="text-2xl font-bold text-white font-display">Problem Submitted!</h2>
             <p className="text-white/55 text-sm leading-relaxed">
               Thank you for contributing to our design problem bank. A teacher will review your
               submission before it appears in the gallery, and a student team may reach out to learn more.
@@ -218,7 +218,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
               {step === 1 && (
                 <>
                   <div>
-                    <h2 className="text-lg font-bold text-white mb-0.5" style={{ fontFamily: 'Manrope, sans-serif' }}>Describe the Problem</h2>
+                    <h2 className="text-lg font-bold text-white mb-0.5 font-display">Describe the Problem</h2>
                     <p className="text-white/40 text-xs">Tell us about a real-world problem you've encountered.</p>
                   </div>
                   <div>
@@ -266,7 +266,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
               {step === 2 && (
                 <>
                   <div>
-                    <h2 className="text-lg font-bold text-white mb-0.5" style={{ fontFamily: 'Manrope, sans-serif' }}>Add Some Details</h2>
+                    <h2 className="text-lg font-bold text-white mb-0.5 font-display">Add Some Details</h2>
                     <p className="text-white/40 text-xs">Everything here is optional — fill in what you can.</p>
                   </div>
                   <div>
@@ -293,14 +293,14 @@ export function SubmitWizard({ onClose }: WizardProps) {
                     </div>
                     <div>
                       <label className={labelCls}>How often?</label>
-                      <select value={frequency} onChange={e => setFrequency(e.target.value)} className="w-full px-3 py-2.5 rounded-xl bg-[#131926] border border-white/[0.12] text-white text-sm focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
-                        <option value="" className="bg-[#131926] text-white">Select…</option>
-                        <option value="daily" className="bg-[#131926] text-white">Daily</option>
-                        <option value="weekly" className="bg-[#131926] text-white">A few times a week</option>
-                        <option value="monthly" className="bg-[#131926] text-white">A few times a month</option>
-                        <option value="occasionally" className="bg-[#131926] text-white">Occasionally</option>
-                        <option value="seasonal" className="bg-[#131926] text-white">Seasonally</option>
-                        <option value="once" className="bg-[#131926] text-white">One-time event</option>
+                      <select value={frequency} onChange={e => setFrequency(e.target.value)} className="w-full px-3 py-2.5 rounded-xl bg-dawson-navy-800 border border-white/[0.12] text-white text-sm focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
+                        <option value="" className="bg-dawson-navy-800 text-white">Select…</option>
+                        <option value="daily" className="bg-dawson-navy-800 text-white">Daily</option>
+                        <option value="weekly" className="bg-dawson-navy-800 text-white">A few times a week</option>
+                        <option value="monthly" className="bg-dawson-navy-800 text-white">A few times a month</option>
+                        <option value="occasionally" className="bg-dawson-navy-800 text-white">Occasionally</option>
+                        <option value="seasonal" className="bg-dawson-navy-800 text-white">Seasonally</option>
+                        <option value="once" className="bg-dawson-navy-800 text-white">One-time event</option>
                       </select>
                     </div>
                   </div>
@@ -348,7 +348,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
               {step === 3 && (
                 <>
                   <div>
-                    <h2 className="text-lg font-bold text-white mb-0.5" style={{ fontFamily: 'Manrope, sans-serif' }}>About You</h2>
+                    <h2 className="text-lg font-bold text-white mb-0.5 font-display">About You</h2>
                     <p className="text-white/40 text-xs">Let us know who you are so students can follow up.</p>
                   </div>
                   <div>

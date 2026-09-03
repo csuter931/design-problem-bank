@@ -338,10 +338,10 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
   // ── Render ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0b0f1a] text-white">
+    <div className="min-h-screen bg-dawson-navy-900 text-white">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-10 bg-[#0b0f1a]/90 backdrop-blur border-b border-white/[0.07] px-6 py-4">
+      <header className="sticky top-0 z-10 bg-dawson-navy-900/90 backdrop-blur border-b border-white/[0.07] px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={onBack} className="text-white/65 hover:text-white text-sm transition-colors">
@@ -350,7 +350,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-2">
               <span className="text-xl">🎓</span>
               <div>
-                <h1 className="font-bold text-sm text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <h1 className="font-bold text-sm text-white leading-none font-display">
                   Student Dashboard
                 </h1>
                 <p className="text-xs text-white/60">Design Problem Bank</p>
@@ -370,7 +370,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   </button>
                   <button
                     onClick={() => setManageTeamsOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/25 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dawson-orange/15 border border-dawson-orange/30 text-dawson-orange text-xs font-medium hover:bg-dawson-orange/25 transition-colors"
                   >
                     👥 Manage Teams
                   </button>
@@ -402,7 +402,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
           <div className="max-w-sm mx-auto text-center flex flex-col items-center gap-6 pt-16">
             <div className="text-6xl">🔐</div>
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h2 className="text-2xl font-bold text-white mb-2 font-display">
                 Student Sign In
               </h2>
               <p className="text-white/65 text-sm leading-relaxed">
@@ -462,9 +462,9 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
             {/* Team banner if no team */}
             {!team && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+              <div className="bg-dawson-orange/10 border border-dawson-orange/30 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-yellow-300 font-medium text-sm">You're a free agent</p>
+                  <p className="text-dawson-orange font-medium text-sm">You're a free agent</p>
                   <p className="text-white/65 text-xs">Join or create a team to claim problems.</p>
                 </div>
                 <div className="flex gap-2">
@@ -496,7 +496,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   }`}>
                   {t.label}
                   <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full ${
-                    t.id === 'pending' && t.count > 0 ? 'bg-amber-500/40 text-amber-100 font-semibold'
+                    t.id === 'pending' && t.count > 0 ? 'bg-dawson-orange/40 text-dawson-orange font-semibold'
                     : tab === t.id ? 'bg-white/20' : 'bg-white/[0.08]'
                   }`}>
                     {t.count}
@@ -689,7 +689,7 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap gap-1 mb-1.5">
             {context === 'pending' && (
-              <span className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-200 border-amber-500/40">
+              <span className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full border bg-dawson-orange/20 text-dawson-orange border-dawson-orange/40">
                 ⏳ PENDING REVIEW
               </span>
             )}
@@ -730,14 +730,14 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         )}
         {context === 'mine' && isMine && status === 'claimed' && (
           <>
-            <button onClick={() => onUpdateStatus(problem.id, 'inprogress')} className="px-4 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors">▶ Start Work</button>
+            <button onClick={() => onUpdateStatus(problem.id, 'inprogress')} className="px-4 py-1.5 rounded-lg bg-dawson-carolina/20 border border-dawson-carolina/30 text-dawson-carolina text-xs font-medium hover:bg-dawson-carolina/30 transition-colors">▶ Start Work</button>
             <button onClick={() => onEmailTemplate('intro')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Intro Email</button>
             <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">📝 Notes</button>
           </>
         )}
         {context === 'mine' && isMine && status === 'inprogress' && (
           <>
-            <button onClick={() => onUpdateStatus(problem.id, 'solved')} className="px-4 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-medium hover:bg-purple-500/30 transition-colors">✅ Mark Solved</button>
+            <button onClick={() => onUpdateStatus(problem.id, 'solved')} className="px-4 py-1.5 rounded-lg bg-dawson-purple/60 border border-dawson-purple text-purple-200 text-xs font-medium hover:bg-dawson-purple/80 transition-colors">✅ Mark Solved</button>
             <button onClick={() => onEmailTemplate('update')} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">✉ Progress Update</button>
             <button onClick={() => onViewDetail(problem)} className="px-4 py-1.5 rounded-lg border border-white/[0.15] text-white/70 text-xs hover:text-white transition-colors">📝 Notes</button>
           </>
@@ -747,7 +747,7 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
         )}
         {(context === 'pending' || context === 'rejected') && (
           <>
-            <button onClick={() => onApprove?.(problem.id)} className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/30 transition-colors">
+            <button onClick={() => onApprove?.(problem.id)} className="px-4 py-1.5 rounded-lg bg-dawson-seagreen/20 border border-dawson-seagreen/40 text-dawson-seagreen text-xs font-semibold hover:bg-dawson-seagreen/30 transition-colors">
               ✓ {context === 'rejected' ? 'Restore & Approve' : 'Approve'}
             </button>
             {context === 'pending' && (
@@ -790,10 +790,10 @@ function TeamSetupModal({ user, teamMode, teamName, savingTeam, existingTeams, o
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-md bg-dawson-navy-800 border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
           <div>
-            <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>Set up your team</h2>
+            <h2 className="font-bold text-white text-base font-display">Set up your team</h2>
             <p className="text-white/65 text-xs mt-0.5">Signed in as {user.email}</p>
           </div>
           <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>
@@ -945,10 +945,10 @@ ${contactEmail}`,
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-xl bg-[#131926] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-xl bg-dawson-navy-800 border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.08]">
           <div>
-            <h2 className="font-bold text-white text-base" style={{ fontFamily: 'Manrope, sans-serif' }}>{titles[type]}</h2>
+            <h2 className="font-bold text-white text-base font-display">{titles[type]}</h2>
             <p className="text-white/65 text-xs mt-0.5">Edit and send from your school email to {problem.submitterName || 'the submitter'}</p>
           </div>
           <button onClick={onClose} className="text-white/55 hover:text-white/80 text-lg transition-colors">✕</button>

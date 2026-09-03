@@ -6,10 +6,10 @@ export const STATUS_LABELS: Record<string, string> = {
 }
 
 export const STATUS_COLORS: Record<string, string> = {
-  new:        'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  claimed:    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  inprogress: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  solved:     'bg-purple-500/20 text-purple-300 border-purple-500/30',
+  new:        'bg-dawson-seagreen/20 text-dawson-seagreen border-dawson-seagreen/30',
+  claimed:    'bg-dawson-orange/20 text-dawson-orange border-dawson-orange/30',
+  inprogress: 'bg-dawson-carolina/20 text-dawson-carolina border-dawson-carolina/30',
+  solved:     'bg-dawson-purple/60 text-purple-200 border-dawson-purple',
 }
 
 export const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
