@@ -4,7 +4,7 @@ Last updated: 2026-09-03
 
 ## Phase 1 — Rules hardening + moderation: DEPLOYED 2026-09-03
 Index, client (build `50b3221`), and rules are all live. The `problems` collection was already empty, so the backfill was a no-op. Verified in production: unauthenticated list / teams / config / unfiltered query / self-approving create all return 403; the approved-only gallery query returns 200; a wizard submission succeeds and stays hidden. Remaining checks need a signed-in human:
-- [ ] Sign in as a teacher: the **Pending** tab should show one test problem ("TEST — moderation rollout check"). Approve it → it appears in the public gallery; then delete it from the detail modal. This also proves the super-user path end-to-end (lowercase email was confirmed in the console before deploy).
+- [x] Teacher path verified live 2026-09-03: a new submission was hidden from the gallery, appeared in the **Pending** tab (badge showed 2 — the teacher's own test plus the deploy check), Approve made both public, Delete removed both.
 - [ ] Sign in once with a `@dawsonstudents.org` account and claim an approved problem — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production.
 - [ ] Exercise Manage Teams delete and Edit save once as a super user.
 - [ ] Remove this section once verified.
