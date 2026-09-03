@@ -21,8 +21,8 @@ Index, client (build `50b3221`), and rules are all live. The `problems` collecti
 - [ ] Sign in with a `@dawsonstudents.org` account on the new URL (covers both the new path and the `email_verified` rule for the student domain).
 - [ ] **Distribute the dashboard URL to students**: `https://csuter931.github.io/design-problem-bank/dashboard/`. The gallery's Student Login control was removed 2026-09-03 (pre-launch, so no one was stranded).
 
-## Phase 3 — Dawson branding: built 2026-09-03
-Palette, type, surfaces, status colours, favicon, and titles are on-brand (see "Branding" in CLAUDE.md). Kept the single dark theme on Royal Blue navy — a light Alabaster theme would mean touching ~390 white-on-dark utilities and is a separate decision.
+## Phase 3 — Dawson branding: DEPLOYED 2026-09-03 (build `1ccf854`)
+Palette, type, surfaces, status colours, logo, favicon, and titles are on-brand (see "Branding" in CLAUDE.md); verified live at both URLs with no console errors. Kept the single dark theme on Royal Blue navy — a light Alabaster theme would mean touching ~390 white-on-dark utilities and is a separate decision.
 - [x] Logo supplied — the reversed-colour (white) PNG is in both headers directly on the navy, per the manual's dark-background rule (2026-09-03). Full-colour version and EPS parked in gitignored `brand/`.
 - [ ] Visual review on the live site at both URLs after deploy; the headline serif (Crimson Pro) is a taste call — if it reads too formal, `font-display` is a one-line swap to Nunito in `tailwind.config.js`.
 
