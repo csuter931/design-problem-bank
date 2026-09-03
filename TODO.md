@@ -16,9 +16,9 @@ Index, client (build `50b3221`), and rules are all live. The `problems` collecti
 - [x] Moderation gate: public create forces `approved:false`; read is approved-only; Pending tab with Approve / soft Reject; Export JSON replaces the locked-out backup script
 - [x] Emulator rules test suite (`tests/rules/`), local emulator dev mode (`npm run dev:emulator`), backfill script
 
-## Phase 2 — Student Dashboard on its own URL: built 2026-09-03
-`/design-problem-bank/dashboard/` is a second Vite entry (`dashboard/index.html` → `src/dashboard.tsx`); the in-app view switch, lazy import, and OAuth-redirect flag are gone. Verified locally: both pages render, the dashboard has `noindex` and a dark first paint, Back returns to the gallery.
-- [ ] After deploy: open `…/dashboard` **without** the trailing slash and confirm the Pages 301; sign in with a `@dawsonstudents.org` account on the new URL.
+## Phase 2 — Student Dashboard on its own URL: DEPLOYED 2026-09-03
+`/design-problem-bank/dashboard/` is a second Vite entry (`dashboard/index.html` → `src/dashboard.tsx`); the in-app view switch, lazy import, and OAuth-redirect flag are gone. Verified live (build `029537c`): the URL returns 200 with `noindex`, `…/dashboard` without the slash 301s to it, the sign-in card renders, and the gallery has no login control.
+- [ ] Sign in with a `@dawsonstudents.org` account on the new URL (covers both the new path and the `email_verified` rule for the student domain).
 - [ ] **Distribute the dashboard URL to students**: `https://csuter931.github.io/design-problem-bank/dashboard/`. The gallery's Student Login control was removed 2026-09-03 (pre-launch, so no one was stranded).
 
 ## Security — still open after Phase 1
