@@ -14,6 +14,16 @@ const buildStamp = `${commitSha()} · ${new Date().toISOString().slice(0, 10)}`
 export default defineConfig({
   plugins: [react()],
   base: '/design-problem-bank/',
+  // Multi-page build: the gallery at / and the Student Dashboard at /dashboard/.
+  // Both entries must be listed — omitting 'main' silently drops the gallery.
+  build: {
+    rolldownOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        dashboard: path.resolve(__dirname, 'dashboard/index.html'),
+      },
+    },
+  },
   define: {
     __BUILD_STAMP__: JSON.stringify(buildStamp),
   },

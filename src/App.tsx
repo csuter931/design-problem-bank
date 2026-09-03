@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { collection, orderBy, query, where, onSnapshot, doc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -7,7 +7,9 @@ import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
-const StudentDashboard = lazy(() => import('@/components/StudentDashboard').then(m => ({ default: m.StudentDashboard })))
+// The Student Dashboard is its own page (src/dashboard.tsx → /dashboard/),
+// not a view of this component.
+const DASHBOARD_URL = `${import.meta.env.BASE_URL}dashboard/`
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -212,17 +214,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [view, setView] = useState<'gallery' | 'student'>(() => {
-    // Auto-navigate to student dashboard after Google OAuth redirect
-    const flag = localStorage.getItem('reopenStudentPortal')
-    return flag && (Date.now() - parseInt(flag)) < 5 * 60 * 1000 ? 'student' : 'gallery'
-  })
   const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  // Consume the OAuth-redirect flag. Clearing it here (not in the state
-  // initializer) keeps the initializer pure — StrictMode double-invokes
-  // initializers in dev, which would eat the flag before the real render.
-  useEffect(() => { localStorage.removeItem('reopenStudentPortal') }, [])
 
   // Load from Firestore in real-time. Only approved problems are public — the
   // rules reject any query that doesn't carry this where clause, and the
@@ -267,15 +259,6 @@ function App() {
   // (and closes itself if the problem is deleted).
   const selectedProblem = selectedId ? problems.find(p => p.id === selectedId) ?? null : null
 
-
-  if (view === 'student') {
-    return (
-      <Suspense fallback={null}>
-        <StudentDashboard onBack={() => setView('gallery')} />
-      </Suspense>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       {wizardOpen && <SubmitWizard onClose={() => setWizardOpen(false)} />}
@@ -309,12 +292,15 @@ function App() {
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
             <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
             <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
-            <button
-              onClick={() => setView('student')}
+            {/* Plain link, kept until the dashboard URL has been handed to
+                students — removing it first would leave them with no way in.
+                Delete this <a> once the URL is distributed. */}
+            <a
+              href={DASHBOARD_URL}
               className="px-4 py-1.5 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors text-xs"
             >
               🎓 Student Login
-            </button>
+            </a>
           </div>
         </div>
 

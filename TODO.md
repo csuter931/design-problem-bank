@@ -16,6 +16,11 @@ Index, client (build `50b3221`), and rules are all live. The `problems` collecti
 - [x] Moderation gate: public create forces `approved:false`; read is approved-only; Pending tab with Approve / soft Reject; Export JSON replaces the locked-out backup script
 - [x] Emulator rules test suite (`tests/rules/`), local emulator dev mode (`npm run dev:emulator`), backfill script
 
+## Phase 2 — Student Dashboard on its own URL: built 2026-09-03
+`/design-problem-bank/dashboard/` is a second Vite entry (`dashboard/index.html` → `src/dashboard.tsx`); the in-app view switch, lazy import, and OAuth-redirect flag are gone. Verified locally: both pages render, the dashboard has `noindex` and a dark first paint, Back returns to the gallery.
+- [ ] After deploy: open `…/dashboard` **without** the trailing slash and confirm the Pages 301; sign in with a `@dawsonstudents.org` account on the new URL.
+- [ ] **Distribute the dashboard URL to students, then delete the "Student Login" `<a>` in `App.tsx`.** It was deliberately kept as a plain link so nobody is stranded in between.
+
 ## Security — still open after Phase 1
 - [ ] **Team notes + submitter contact are readable by any Dawson account** — better than world-readable, but not private. Firestore has no field-level read rules; move `internalNotes` and `submitterContact` to `problems/{id}/private/detail` with a Dawson/team-scoped read rule. Touches the wizard write path and adds a listener, so it is its own release. The migration needs write access the hardened rules deny — use a self-expiring rules clause (`request.time < timestamp.date(...)`) that can only *remove* those fields.
 - [ ] **Team ownership is not enforced** — any Dawson student can change status on any approved problem, not just their own team's. Needs `claimedByTeam` to be checked against the caller's `teams/{uid}` doc in the rules.

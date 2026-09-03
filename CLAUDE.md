@@ -9,7 +9,9 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 **https://csuter931.github.io/design-problem-bank/**
 
 ## Tech stack
-- **React 19 + TypeScript + Vite** single-page app (`src/`), styled with **Tailwind CSS 3**
+- **React 19 + TypeScript + Vite** multi-page app (`src/`), styled with **Tailwind CSS 3**. Two entries, listed in `build.rolldownOptions.input` in `vite.config.ts` (both must stay listed — dropping `main` silently drops the gallery):
+  - `index.html` → `src/main.tsx` → the public gallery at `/design-problem-bank/`
+  - `dashboard/index.html` → `src/dashboard.tsx` → the Student Dashboard at **`/design-problem-bank/dashboard/`** (noindex; the URL is handed directly to students). No router library — the web server routes. Back / sign-out navigate to `import.meta.env.BASE_URL`
 - **framer-motion** for animations
 - Tests: `node:test` with TypeScript type stripping (`src/**/*.test.ts`); Firestore rules tests in `tests/rules/` run against the emulator (`@firebase/rules-unit-testing`)
 
@@ -30,7 +32,8 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - Firebase Hosting was set up but disabled — we use GitHub Pages instead
 
 ## App structure (`src/`)
-- `App.tsx` — public gallery: browse/search/filter **approved** problems, upvote, comment, open the submit wizard; "Student Login" switches to the dashboard. Shows an explicit load error (not an empty bank) if the Firestore query is rejected
+- `main.tsx` / `App.tsx` — public gallery: browse/search/filter **approved** problems, upvote, comment, open the submit wizard. Shows an explicit load error (not an empty bank) if the Firestore query is rejected. The "Student Login" control is a plain `<a>` to `/dashboard/`, kept only until the URL has been distributed to students
+- `dashboard.tsx` — entry for the `/dashboard/` page; renders `StudentDashboard` directly
 - `components/StudentDashboard.tsx` — signed-in view (Google sign-in required): team setup, claim problems, update status, email templates; super-user controls live here, including the **Pending** review tab and **Export JSON**
 - `components/ProblemDetail.tsx` — shared detail modal (photos/lightbox, comments, team notes, super-user Approve/Reject); exports the `Problem` type
 - `components/SubmitWizard.tsx` — 3-step public submission wizard; uploads photos to Cloudinary
@@ -125,6 +128,7 @@ The Firebase API key in `src/lib/firebase.ts` is restricted in Google Cloud Cons
 - `https://dawson-problem-bank-24a9c.firebaseapp.com/*` — Firebase's auth handler (required for the Google sign-in popup)
 
 If you add a third domain in the future, it must be added there too or sign-in will break.
+A new *path* on the same host (e.g. `/dashboard/`) needs no changes — all three configs are host-scoped.
 Firebase API keys are public by design; actual security comes from Firestore rules + Auth.
 
 ## Google Sign-in Configuration

@@ -121,21 +121,15 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   async function handleSignIn() {
     setSigningIn(true)
     setSignInError('')
-    localStorage.setItem('reopenStudentPortal', String(Date.now()))
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider())
       const domain = result.user.email?.split('@')[1]
       if (domain !== 'dawsonschool.org' && domain !== 'dawsonstudents.org') {
         await signOut(auth)
-        localStorage.removeItem('reopenStudentPortal')
         setSignInError('Sign-in is restricted to Dawson School accounts.')
         return
       }
-      // Popup flow means no page reload happened — clear the flag so a later
-      // manual reload doesn't teleport the user back into the student view.
-      localStorage.removeItem('reopenStudentPortal')
     } catch (e: unknown) {
-      localStorage.removeItem('reopenStudentPortal')
       const msg = e instanceof Error ? e.message : String(e)
       setSignInError(msg.includes('popup-closed') ? 'Sign-in cancelled.' : 'Sign-in failed. Try again.')
     } finally {
