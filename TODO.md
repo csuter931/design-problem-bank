@@ -2,13 +2,12 @@
 
 Last updated: 2026-09-03
 
-## Phase 1 — Rules hardening + moderation: BUILT on `dev`, NOT YET DEPLOYED
-Code, rules, and tests are complete on the `dev` branch (`npm run test:rules` — 50 passing). What remains is the production rollout, which has a strict order because the new client works under the old rules but the old client does not work under the new rules. **Follow "Deploy order for rules changes" in CLAUDE.md.** Pre-flight items that need a human:
-- [ ] **Confirm every entry in `config/superusers.emails` is lowercase** (Firebase console). The rule lowercases the token email but cannot lowercase the stored list; one capital letter locks that teacher out of approve/edit/delete/Manage Teams. The dashboard now shows a red banner if this happens, but check first.
-- [ ] Decide the backfill value: `--apply` (all existing problems become pending → **public gallery is empty until you approve them**) or `--apply --approve-all` (everything stays visible). The plan's decision was pending; the flag keeps it reversible at run time.
-- [ ] Deploy indexes, wait for **Enabled**, run the backfill, merge to main, verify live under the old rules, then deploy rules at a low-traffic hour and re-verify (checklist in CLAUDE.md).
-- [ ] Sign in once with a `@dawsonstudents.org` account after the rules deploy — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production.
-- [ ] Delete the test problems; remove this section once verified.
+## Phase 1 — Rules hardening + moderation: DEPLOYED 2026-09-03
+Index, client (build `50b3221`), and rules are all live. The `problems` collection was already empty, so the backfill was a no-op. Verified in production: unauthenticated list / teams / config / unfiltered query / self-approving create all return 403; the approved-only gallery query returns 200; a wizard submission succeeds and stays hidden. Remaining checks need a signed-in human:
+- [ ] Sign in as a teacher: the **Pending** tab should show one test problem ("TEST — moderation rollout check"). Approve it → it appears in the public gallery; then delete it from the detail modal. This also proves the super-user path end-to-end (lowercase email was confirmed in the console before deploy).
+- [ ] Sign in once with a `@dawsonstudents.org` account and claim an approved problem — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production.
+- [ ] Exercise Manage Teams delete and Edit save once as a super user.
+- [ ] Remove this section once verified.
 
 ### Done in Phase 1 (2026-09-03)
 - [x] Anonymous updates narrowed to exactly two shapes (upvote +1, single validated comment append), and only on approved docs
