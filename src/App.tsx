@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
+import { DawsonLogo } from '@/components/DawsonLogo'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
 // The Student Dashboard is its own page (src/dashboard.tsx → /dashboard/);
@@ -279,7 +280,7 @@ function App() {
         {/* Top nav row */}
         <div className="relative z-10 max-w-5xl mx-auto flex items-center justify-between mb-14">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">💡</span>
+            <DawsonLogo />
             <div>
               <h1 className="font-bold text-lg tracking-tight text-white leading-none font-display">
                 Design Problem Bank

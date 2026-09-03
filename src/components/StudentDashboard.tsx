@@ -8,6 +8,7 @@ import { auth, db } from '@/lib/firebase'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { ManageTeamsModal } from '@/components/ManageTeamsModal'
 import { EditProblemModal } from '@/components/EditProblemModal'
+import { DawsonLogo } from '@/components/DawsonLogo'
 import { AnimatePresence } from 'framer-motion'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { partitionByReview } from '@/lib/moderation'
@@ -348,7 +349,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               ← Back
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🎓</span>
+              <DawsonLogo imgClass="h-7" />
               <div>
                 <h1 className="font-bold text-sm text-white leading-none font-display">
                   Student Dashboard

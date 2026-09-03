@@ -23,7 +23,7 @@ Index, client (build `50b3221`), and rules are all live. The `problems` collecti
 
 ## Phase 3 — Dawson branding: built 2026-09-03
 Palette, type, surfaces, status colours, favicon, and titles are on-brand (see "Branding" in CLAUDE.md). Kept the single dark theme on Royal Blue navy — a light Alabaster theme would mean touching ~390 white-on-dark utilities and is a separate decision.
-- [ ] **Supply the logo.** Get the approved *reversed-colour* Dawson logo (SVG or PNG) from Employee Resources → Marketing and Branding, drop it in `public/`, and replace the 💡 placeholders in `App.tsx` (header + empty card thumbnail) and `StudentDashboard.tsx` (header). Respect the safety margin (height of "SCHOOL") and never recolour or stretch it.
+- [x] Logo supplied — the reversed-colour (white) PNG is in both headers directly on the navy, per the manual's dark-background rule (2026-09-03). Full-colour version and EPS parked in gitignored `brand/`.
 - [ ] Visual review on the live site at both URLs after deploy; the headline serif (Crimson Pro) is a taste call — if it reads too formal, `font-display` is a one-line swap to Nunito in `tailwind.config.js`.
 
 ## Security — still open after Phase 1
