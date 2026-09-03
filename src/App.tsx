@@ -7,9 +7,8 @@ import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
-// The Student Dashboard is its own page (src/dashboard.tsx → /dashboard/),
-// not a view of this component.
-const DASHBOARD_URL = `${import.meta.env.BASE_URL}dashboard/`
+// The Student Dashboard is its own page (src/dashboard.tsx → /dashboard/);
+// its URL is distributed to students directly, so the gallery has no link to it.
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -292,15 +291,6 @@ function App() {
             <span><span className="text-white font-semibold">{problems.length}</span> Problems</span>
             <span><span className="text-emerald-400 font-semibold">{problems.filter(p => !p.status || p.status === 'new').length}</span> Available</span>
             <span><span className="text-purple-400 font-semibold">{problems.filter(p => p.status === 'solved').length}</span> Solved</span>
-            {/* Plain link, kept until the dashboard URL has been handed to
-                students — removing it first would leave them with no way in.
-                Delete this <a> once the URL is distributed. */}
-            <a
-              href={DASHBOARD_URL}
-              className="px-4 py-1.5 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors text-xs"
-            >
-              🎓 Student Login
-            </a>
           </div>
         </div>
 

@@ -32,7 +32,7 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 - Firebase Hosting was set up but disabled — we use GitHub Pages instead
 
 ## App structure (`src/`)
-- `main.tsx` / `App.tsx` — public gallery: browse/search/filter **approved** problems, upvote, comment, open the submit wizard. Shows an explicit load error (not an empty bank) if the Firestore query is rejected. The "Student Login" control is a plain `<a>` to `/dashboard/`, kept only until the URL has been distributed to students
+- `main.tsx` / `App.tsx` — public gallery: browse/search/filter **approved** problems, upvote, comment, open the submit wizard. Shows an explicit load error (not an empty bank) if the Firestore query is rejected. There is deliberately no link to the dashboard — students get `https://csuter931.github.io/design-problem-bank/dashboard/` directly
 - `dashboard.tsx` — entry for the `/dashboard/` page; renders `StudentDashboard` directly
 - `components/StudentDashboard.tsx` — signed-in view (Google sign-in required): team setup, claim problems, update status, email templates; super-user controls live here, including the **Pending** review tab and **Export JSON**
 - `components/ProblemDetail.tsx` — shared detail modal (photos/lightbox, comments, team notes, super-user Approve/Reject); exports the `Problem` type
