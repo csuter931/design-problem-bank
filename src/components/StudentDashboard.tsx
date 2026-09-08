@@ -7,6 +7,7 @@ import {
 import { auth, db } from '@/lib/firebase'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { ManageTeamsModal } from '@/components/ManageTeamsModal'
+import { PhotoPlaceholder } from '@/components/PhotoPlaceholder'
 import { EditProblemModal } from '@/components/EditProblemModal'
 import { DawsonLogo } from '@/components/DawsonLogo'
 import { AnimatePresence } from 'framer-motion'
@@ -679,10 +680,10 @@ function ProblemListItem({ problem, context, team, onClaim, onUpdateStatus, onVi
     <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/[0.14] transition-colors">
       <div className="flex gap-4 p-4 cursor-pointer" onClick={() => onViewDetail(problem)}>
         {/* Thumbnail */}
-        <div className="w-20 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-white/[0.04] flex items-center justify-center">
+        <div className="w-20 h-16 flex-shrink-0 rounded-xl overflow-hidden">
           {problem.photos?.[0]
             ? <img src={problem.photos[0]} alt="" className="w-full h-full object-cover" />
-            : <span className="text-2xl opacity-20">💡</span>
+            : <PhotoPlaceholder id={problem.id} bulbClass="w-6 h-6" />
           }
         </div>
 
