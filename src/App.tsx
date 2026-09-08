@@ -7,17 +7,19 @@ import { SubmitWizard } from '@/components/SubmitWizard'
 import { ProblemDetail, type Problem } from '@/components/ProblemDetail'
 import { DawsonLogo } from '@/components/DawsonLogo'
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder'
-import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
+import { STATUS_LABELS, STATUS_COLORS, STATUS_DOT, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 
 // The Student Dashboard is its own page (src/dashboard.tsx → /dashboard/);
 // its URL is distributed to students directly, so the gallery has no link to it.
 
+// Status dots are rendered from STATUS_DOT, not baked into the label, so the
+// filter bar and the card badges cannot drift apart.
 const FILTERS = [
   { label: 'All', value: 'all' },
-  { label: '🟢 New', value: 'new' },
-  { label: '🟡 Claimed', value: 'claimed' },
-  { label: '🔵 In Progress', value: 'inprogress' },
-  { label: '🟣 Solved', value: 'solved' },
+  { label: 'New', value: 'new' },
+  { label: 'Claimed', value: 'claimed' },
+  { label: 'In Progress', value: 'inprogress' },
+  { label: 'Solved', value: 'solved' },
 ]
 
 // ── Motion vocabulary ────────────────────────────────────
@@ -424,7 +426,12 @@ function App() {
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                     />
                   )}
-                  <span className="relative">{f.label}</span>
+                  <span className="relative flex items-center gap-1.5">
+                    {STATUS_DOT[f.value] && (
+                      <span className={`w-2 h-2 rounded-full ${STATUS_DOT[f.value]}`} aria-hidden="true" />
+                    )}
+                    {f.label}
+                  </span>
                 </button>
               ))}
             </div>

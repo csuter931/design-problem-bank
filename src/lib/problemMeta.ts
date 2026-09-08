@@ -12,6 +12,20 @@ export const STATUS_COLORS: Record<string, string> = {
   solved:     'bg-dawson-purple/60 text-purple-200 border-dawson-purple',
 }
 
+// Solid dot colour per status, for the gallery filter pills and the dashboard
+// tabs. These were previously the emoji circles for green/yellow/blue/purple,
+// whose hues are not in the Dawson palette — a yellow dot sat directly beside
+// an Atomic Orange CLAIMED badge meaning the same thing. Solved uses
+// purple-300 rather than dawson-purple (#4D1551), which is far too dark to
+// read as a small dot on navy; that matches how the gallery header already
+// renders its Solved stat.
+export const STATUS_DOT: Record<string, string> = {
+  new:        'bg-dawson-seagreen',
+  claimed:    'bg-dawson-orange',
+  inprogress: 'bg-dawson-carolina',
+  solved:     'bg-purple-300',
+}
+
 export const SEVERITY_EMOJI = ['', '😀', '😕', '😟', '😫', '😱']
 export const SEVERITY_LABEL = ['', 'Minor', 'Moderate', 'Painful', 'Serious', 'Critical']
 

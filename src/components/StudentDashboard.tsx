@@ -11,7 +11,7 @@ import { PhotoPlaceholder } from '@/components/PhotoPlaceholder'
 import { EditProblemModal } from '@/components/EditProblemModal'
 import { DawsonLogo } from '@/components/DawsonLogo'
 import { AnimatePresence } from 'framer-motion'
-import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
+import { STATUS_LABELS, STATUS_COLORS, STATUS_DOT, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { partitionByReview } from '@/lib/moderation'
 
 // ── Types ────────────────────────────────────────────────
@@ -322,10 +322,12 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   )
   const solved = approvedProblems.filter(p => p.status === 'solved')
 
-  const TABS: { id: Tab; label: string; count: number }[] = [
-    { id: 'available', label: '🟢 Available', count: available.length },
+  // The two status tabs carry a brand-coloured dot (STATUS_DOT); the rest keep
+  // their pictograph, which names a view rather than a status.
+  const TABS: { id: Tab; label: string; count: number; dot?: string }[] = [
+    { id: 'available', label: 'Available', count: available.length, dot: STATUS_DOT.new },
     { id: 'mine', label: '📌 My Team\'s', count: mine.length },
-    { id: 'solved', label: '🟣 Solved', count: solved.length },
+    { id: 'solved', label: 'Solved', count: solved.length, dot: STATUS_DOT.solved },
     { id: 'all', label: '📚 All', count: approvedProblems.length },
     ...(isSuperUser ? [{ id: 'pending' as Tab, label: '⏳ Pending', count: pending.length }] : []),
   ]
@@ -496,6 +498,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                     tab === t.id ? 'bg-primary text-white shadow' : 'text-white/65 hover:text-white'
                   }`}>
+                  {t.dot && <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} aria-hidden="true" />}
                   {t.label}
                   <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full ${
                     t.id === 'pending' && t.count > 0 ? 'bg-dawson-orange/40 text-dawson-orange font-semibold'
