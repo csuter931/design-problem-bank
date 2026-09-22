@@ -16,76 +16,119 @@ When someone submits a problem, every super user gets an email within about five
 minutes, with enough detail to triage from a phone and a link straight to the
 review queue.
 
-## Decisions taken during brainstorming
+## Decisions
 
 | Question | Decision | Reasoning |
 |---|---|---|
 | Channel | Email | Works everywhere, nothing to install, persists in the inbox until dealt with |
-| Timing | Near-instant (~5 min) | Matches the actual need; a digest-only design leaves a Monday submission until Tuesday |
+| Timing | Near-instant (~5 min poll) | A digest-only design leaves a Monday-afternoon submission until Tuesday |
 | Recipients | Everyone in `config/superusers.emails` | The list already exists; a second list would drift |
-| Host | Cloudflare Workers | See "Host selection" below |
-| Sender | Brevo | Only mainstream provider left with a permanent free tier (300/day) that verifies a *single sender address* rather than a whole domain — we do not control DNS for `dawsonschool.org` |
+| Host | **Google Apps Script** | See "How we got here" |
+| Sender | `csupiro@dawsonschool.org`, display name "Dawson Problem Bank" | Google sends it, so it authenticates natively |
+| Credentials | **None stored** | `ScriptApp.getOAuthToken()` with a read-only scope |
 | Bursts | One digest email per poll cycle | A class of 30 submitting together produces one email, not thirty |
 | Failure visibility | Weekly heartbeat email | Makes silence meaningful |
 
-### Host selection
+## How we got here
 
-Firebase Cloud Functions was the natural first choice and was rejected: it
-requires the Blaze plan, which requires a card on file. Expected cost was
-$0.00/month (2M free invocations against ~50 used), but the project is funded by
-a school card at a tax-exempt organisation, and the institutional friction of
-putting that card on a Google Cloud billing account outweighs a feature of this
-size. Latency was the only thing given up — seconds becomes ~5 minutes, which is
-indistinguishable for a review queue.
+The design moved three times, each time on evidence rather than preference. The
+chain is recorded because the rejected options are all reasonable and someone
+will reasonably propose them again.
 
-Among the card-free options:
+**Firebase Cloud Functions** was the natural first choice — a Firestore
+`onDocumentCreated` trigger, instant, inside the project we already run.
+Rejected because it requires the Blaze plan and therefore a card on file.
+Expected cost was genuinely $0.00/month (2M free invocations against ~50 used),
+but the project is funded by a school card at a tax-exempt organisation, and the
+institutional friction of attaching that card to a Google Cloud billing account
+outweighs a feature this size. The only thing given up was latency — seconds
+becomes ~5 minutes, which is indistinguishable for a review queue.
 
-| | Cloudflare Workers | Netlify Functions | GitHub Actions |
-|---|---|---|---|
-| New account | Yes | Yes | No |
-| Cron punctuality | On time | On time | 10–30 min late, sometimes skipped |
-| Auto-disables | No | No | Yes, after 60 days without commits |
-| Free tier | 100K req/day, stable for years | 125K/month, tightened over time | Unlimited on public repos |
-| Free KV store | Yes | Yes (Blobs) | No |
-| Runtime | V8 isolates (not Node) | Node | Node |
+**Cloudflare Workers** was then chosen over Netlify and GitHub Actions. GitHub
+Actions lost on its 60-day auto-disable: a summer break with no commits would
+silently switch the notifier off and leave it off when school resumed. Netlify
+lost on free-tier durability. Cloudflare won on a security argument — its free
+KV store meant the Firebase service-account key could be read-only, where a
+host without free storage forces a `notifiedAt` write back into Firestore and a
+write-capable key.
 
-**Cloudflare won on security, not cost.** Every option must hold a Firebase
-service-account key, which bypasses `firestore.rules` entirely — the thing
-hardened in Phase 1. Cloudflare's free KV gives the poller its own place to
-remember what it has already emailed, so the Firebase credential can be
-**read-only**. Without a free KV store the natural design writes a `notifiedAt`
-flag back into Firestore, forcing a write-capable key.
+**Apps Script** then displaced Cloudflare on two findings.
 
-The cost of that choice is that Workers are not Node, so `firebase-admin` will
-not run and the service-account auth path (JWT → OAuth token → Firestore REST)
-is written by hand. That is roughly forty lines, written once, unit-testable,
-and not the kind of code that spontaneously breaks.
+The first was a DNS lookup. `dawsonschool.org` publishes:
 
-GitHub Actions' 60-day auto-disable was the deciding objection against the
-zero-new-account option: a summer break with no commits would silently switch
-the notifier off, and it would stay off when school resumed.
+```
+_dmarc.dawsonschool.org   v=DMARC1; p=quarantine; pct=100; rua=mailto:admin@dawsonschool.org
+dawsonschool.org          v=spf1 ...:_spf.google.com ... -all
+MX                        Google Workspace
+```
+
+Any third-party sender emitting mail with `From: …@dawsonschool.org` fails SPF
+(hard `-all`, and no Brevo include) and fails DKIM alignment (Brevo signs with
+its own domain). DMARC therefore fails, and the published policy quarantines
+100% of it. A user-level Gmail filter does not reliably override a domain
+owner's quarantine policy, and the hardest case is the one we would have been
+in — From and To both `@dawsonschool.org`, which Workspace's inbound spoofing
+protection guards most aggressively. Worse, `rua=mailto:admin@dawsonschool.org`
+means Dawson's IT administrator receives aggregate reports naming the third
+party as an unauthorised sender spoofing the school domain.
+
+The second finding removed the credential entirely. Apps Script can call the
+Firestore REST API with `ScriptApp.getOAuthToken()` — the owner's own Google
+identity — so there is **no service-account key to store, leak, or rotate**.
+Declaring only the `cloud-platform.read-only` scope makes the script incapable
+of writing to Firestore by construction. That is the same safety property the
+Cloudflare design worked to achieve, reached by not having a key at all.
+
+Accepted in exchange: the script belongs to a person rather than to the school
+(see Risks), and the build is fiddlier than `wrangler deploy`.
 
 ## Architecture
 
-A Cloudflare Worker in a new top-level `notifier/` directory in this repo,
-deployed with Wrangler. The existing pipeline is untouched — GitHub Pages still
-builds and deploys the site on push to `main`; the Worker deploys separately
-with `wrangler deploy`, the same way `firestore.rules` deploys separately today.
+An Apps Script project, source-controlled in a new top-level `notifier/`
+directory and pushed with `clasp`. The existing pipeline is untouched — GitHub
+Pages still builds and deploys the site on push to `main`; the notifier deploys
+separately, the same way `firestore.rules` deploys separately today.
+
+Two time-driven triggers, two entry points:
 
 ```
-Cloudflare cron (*/5 * * * *)  →  Worker.scheduled()
-    ├─ KV read:   which problem IDs have I already emailed?
-    ├─ Firestore: problems where approved == false
-    ├─ partitionByReview()   ← imported from src/lib/moderation.ts
+Trigger: every 5 minutes  →  pollForNewSubmissions()
+    ├─ PropertiesService:  which problem IDs have I already emailed?
+    ├─ UrlFetchApp:        Firestore runQuery, problems where approved == false
+    ├─ partitionByReview()  ← imported from src/lib/moderation.ts
     ├─ new = pending IDs − already-emailed IDs
     ├─ if new is non-empty:
-    │     ├─ Firestore: config/superusers → recipient list
-    │     └─ Brevo: one digest email
-    └─ KV write (only after the email succeeds)
+    │     ├─ UrlFetchApp:  config/superusers → recipient list
+    │     └─ MailApp:      one digest email
+    └─ PropertiesService write (only after the email sends)
+
+Trigger: Mondays 07:00  →  weeklyHeartbeat()
+    └─ pending count → one email either way; does not touch stored state
 ```
 
-The Worker performs **no Firestore writes**. That property is what keeps the
-credential read-only, and it should be treated as an invariant of this design.
+The script performs **no Firestore writes**, and its declared OAuth scope makes
+that structurally impossible rather than merely intended. Treat it as an
+invariant: adding a write means widening the scope, which should be a conscious
+decision with its own review.
+
+### Authentication
+
+`ScriptApp.getOAuthToken()` returns a short-lived token for the signed-in
+owner, passed as `Authorization: Bearer …` to
+`https://firestore.googleapis.com/v1/projects/dawson-problem-bank-24a9c/databases/(default)/documents:runQuery`.
+
+Because this is the owner's Google identity acting through IAM, Firestore
+security rules are bypassed — the same as any admin access — so pending and
+rejected documents are readable. The `appsscript.json` manifest declares:
+
+- `https://www.googleapis.com/auth/cloud-platform.read-only` — Firestore reads
+- `https://www.googleapis.com/auth/script.external_request` — `UrlFetchApp`
+- `https://www.googleapis.com/auth/script.send_mail` — `MailApp`
+
+This requires attaching the Apps Script project to the standard GCP project
+`dawson-problem-bank-24a9c` rather than its default hidden one. That project's
+OAuth consent screen is **already configured** — Google Sign-in works on the
+live site today — which removes the most likely setup snag.
 
 ## How "new" is decided
 
@@ -95,12 +138,12 @@ slow clock would create a document stamped *behind* the watermark, and it would
 be skipped silently and permanently — precisely the failure this feature exists
 to prevent.
 
-Instead, KV holds a **set of already-notified document IDs**, pruned every cycle
-to only IDs still present in the pending set:
+Instead, `PropertiesService` holds a **set of already-notified document IDs**,
+pruned every cycle to only IDs still present in the pending set:
 
 ```
-new       = currentPendingIds − storedIds
-storedIds = (storedIds ∩ currentPendingIds) ∪ new     // written only after send
+new    = currentPendingIds − storedIds
+stored = (storedIds ∩ currentPendingIds) ∪ new     // written only after send
 ```
 
 Properties:
@@ -109,16 +152,21 @@ Properties:
 - **No clock dependency** — immune to client and server skew alike.
 - **Self-healing** — a problem approved or rejected between cycles drops out of
   both sets naturally.
-- **At-least-once.** If the email send fails, KV is not written and the next
+- **At-least-once.** If the send fails, stored state is not written and the next
   cycle retries. A duplicate email is an annoyance; a missed one defeats the
   feature. The bias is intentional.
-- **First run seeds silently.** An empty KV means the Worker records the current
-  pending IDs and sends nothing, rather than emailing the entire back catalogue.
+- **First run seeds silently.** Empty stored state means the script records the
+  current pending IDs and sends nothing, rather than emailing the back
+  catalogue.
+
+`PropertiesService` caps a single property value at 9 KB, which holds roughly
+390 document IDs. A review queue will never approach that, but the writer prunes
+oldest-first if it ever would, rather than throwing.
 
 ### Query shape and cost
 
 The query is `problems where approved == false`, with **no `orderBy`**, sorted in
-the Worker. This matters for three reasons:
+the script. This matters for three reasons:
 
 1. A single-field equality filter uses Firestore's automatic index, so
    `firestore.indexes.json` needs no change. (The existing composite is
@@ -131,7 +179,7 @@ the Worker. This matters for three reasons:
    correctness requirement for staying inside the free tier.
 
 `partitionByReview` from `src/lib/moderation.ts` separates pending from rejected.
-That module is pure TypeScript with zero imports, so the Worker imports it
+That module is pure TypeScript with zero imports, so the notifier imports it
 directly and the definition of "pending" stays in one already-tested place.
 
 ## Modules
@@ -140,18 +188,36 @@ directly and the definition of "pending" stays in one already-tested place.
 |---|---|---|
 | `notifier/src/selection.ts` | The set logic above. Pure. | Unit |
 | `notifier/src/email.ts` | `buildDigest(problems, pendingCount)` and `buildHeartbeat(pendingCount)` → `{subject, text, html}`. Pure. | Unit |
-| `notifier/src/firestore.ts` | Service-account JWT (RS256 via WebCrypto `SubtleCrypto`) → Google OAuth2 token → Firestore REST `runQuery` and `get`. | Injected `fetch` |
-| `notifier/src/brevo.ts` | One POST to Brevo's transactional endpoint. | Injected `fetch` |
-| `notifier/src/index.ts` | `scheduled()` handler. Orchestration only; no business logic. | Manual + dry run |
+| `notifier/src/firestore.ts` | Builds the `runQuery` body; parses Firestore's typed-value JSON into plain objects. Takes an injected `(url, options) => {status, body}` so it never names `UrlFetchApp`. | Unit with a fake |
+| `notifier/src/main.ts` | `poll()` and `heartbeat()` — orchestration only. | Manual |
+| `notifier/src/env.ts` | The only file touching `UrlFetchApp`, `MailApp`, `ScriptApp`, `PropertiesService`. | Not tested |
 | `src/lib/dashboardTabs.ts` | `initialTab(search, isSuperUser)` — parses `?tab=`. Pure. | Unit |
 
 The root `npm test` glob extends to cover `notifier/src/**/*.test.ts`, so CI runs
 these and a broken notifier blocks deployment like any other failing test.
 
+Confining every Apps Script global to `env.ts` is what makes the rest testable
+in plain Node, and is also what would make a later move off Apps Script cheap —
+roughly fifty lines would be rewritten and nothing else.
+
 **HTML escaping is a requirement, not a nicety.** Titles and descriptions are
 anonymous, unauthenticated user input being interpolated into an HTML email.
 `buildDigest` escapes them, and the test suite includes a title containing
 `<script>`.
+
+### Build
+
+Apps Script does not support ES modules, so `esbuild` bundles
+`notifier/src/main.ts` into a single flat `notifier/build/Code.js`, and a footer
+exposes the two trigger entry points as globals:
+
+```js
+function pollForNewSubmissions() { return notifier.poll() }
+function weeklyHeartbeat()       { return notifier.heartbeat() }
+```
+
+`clasp push` from `notifier/build` deploys. `notifier/build/` is gitignored; the
+source of truth is `notifier/src`.
 
 ## Email content
 
@@ -160,6 +226,7 @@ address is **deliberately omitted** — it is PII, it is already in the app, and
 email inboxes retain it indefinitely.
 
 ```
+From:    Dawson Problem Bank <csupiro@dawsonschool.org>
 Subject: New problem submitted — Cafeteria line backs up at 11:40
 
 A new problem is waiting for review.
@@ -190,50 +257,93 @@ else who receives a forwarded link.
 
 ## Heartbeat
 
-A second cron, `0 14 * * 1`. Cloudflare cron is UTC-only, so this is Monday 7am
-Mountain in winter and 8am in summer; the drift is accepted in preference to
-maintaining two schedules. It sends one email either way — "nothing pending,
-notifier healthy" or "N still waiting for review" — so that silence on a Monday
-is itself a signal. It also surfaces anything approved-later-and-forgotten.
+A weekly trigger, Mondays at 07:00. The manifest sets
+`"timeZone": "America/Denver"`, so this is genuinely 7am Mountain year-round
+rather than drifting with daylight saving.
 
-The heartbeat is **read-only with respect to KV**: it reports the pending count
-and does not touch the already-notified set. A Monday heartbeat and a 5-minute
-poll firing in the same minute are therefore independent, and neither can cause
-the other to skip a submission.
+It sends one email either way — "nothing pending, notifier healthy" or "N still
+waiting for review" — so that silence on a Monday is itself a signal. It also
+surfaces anything approved-later-and-forgotten.
 
-## Setup and secrets
+The heartbeat is **read-only with respect to stored state**: it reports the
+pending count and does not touch the already-notified set. A Monday heartbeat
+and a 5-minute poll firing in the same minute are therefore independent, and
+neither can cause the other to skip a submission.
 
-Three one-time accounts, all free, no card anywhere:
+Google separately emails a daily failure summary when a script throws, which
+covers errors. The heartbeat covers the case failure emails do not: a trigger
+that has quietly stopped firing at all.
 
-1. **GCP service account** `problem-notifier@dawson-problem-bank-24a9c.iam.gserviceaccount.com`,
-   granted `roles/datastore.viewer` only. A leak of this key would expose pending
-   and rejected submissions and submitter contact details for reading; it could
-   not write or delete anything.
-2. **Cloudflare** — one Worker, one KV namespace. Both the service-account JSON
-   and the Brevo API key are set via `wrangler secret put` and never enter the
-   repo.
-3. **Brevo** — account plus a verified sender address.
+## Setup
 
-The implementation plan carries the step-by-step runbook for all three.
+No new accounts and no stored credentials. One-time steps, all in the runbook
+the implementation plan will carry:
 
-## Known risks
+1. Create the Apps Script project and attach it to GCP project
+   `dawson-problem-bank-24a9c`.
+2. Set the manifest scopes and timezone; authorise once.
+3. Create the two time-driven triggers.
+4. `clasp push`, then run `pollForNewSubmissions` by hand and confirm the first
+   run seeds silently.
+5. Submit a test problem through the live wizard and confirm the email arrives
+   in the inbox within five minutes.
 
-- **Deliverability.** Mail sent through Brevo "from" a `dawsonschool.org` address
-  is not DKIM-aligned with that domain, so Gmail may classify it as spam.
-  Mitigation is a one-time Gmail filter; verifying first-run delivery is an
-  explicit step in the runbook.
+## Risks
+
+- **Workspace admin restrictions may block it.** Dawson's Google admin can
+  restrict Apps Script or require OAuth app allowlisting, which would stop the
+  script obtaining its token. Accepted knowingly rather than verified up front;
+  if it blocks, fall back to Appendix A. Discovered at setup step 2, before any
+  significant work is wasted.
+- **The script belongs to a person, not the school.** It runs as
+  `csupiro@dawsonschool.org`, and Apps Script triggers belong to the user who
+  created them — sharing the project lets another teacher read and edit the
+  code, but they would have to create their own trigger, which would then double
+  every email. If the account is suspended or leaves Dawson, notifications stop.
+  The weekly heartbeat is the detection mechanism. There is no clean
+  department-owned model; this is the one structural advantage the Cloudflare
+  design retains.
+- **Editor drift.** Someone edits the script in the Apps Script web editor and
+  the repo copy goes stale. Mitigation is discipline: `clasp pull` before
+  editing, and a note in CLAUDE.md.
 - **Legacy documents missing `approved` entirely** would not match the query.
   Only possible for pre-moderation documents, and that collection was empty when
   the hardened rules were deployed on 2026-09-03. Noted, not fixed.
 - **Rejected problems accumulate** in the query result over years, slowly raising
   the per-poll read count. Tens per year; revisit only if it becomes material.
-- **Duplicate email** if the Brevo send succeeds but the subsequent KV write
-  fails. Rare, and the accepted side of the at-least-once trade.
+- **Duplicate email** if the send succeeds but the subsequent state write fails.
+  Rare, and the accepted side of the at-least-once trade.
 
 ## Out of scope
 
 - Notifications for claims, comments, upvotes, or status changes.
 - Per-teacher notification preferences or an unsubscribe flow. The recipient list
   is `config/superusers`, edited in the Firebase console.
-- Any Firestore write from the Worker.
+- Any Firestore write from the notifier.
 - Changing the Firebase billing plan.
+
+---
+
+## Appendix A — fallback if Workspace blocks Apps Script
+
+A Cloudflare Worker, free tier, no card. Same selection logic, same query shape,
+same email content, same heartbeat; only the host and the transport change.
+
+- **State:** a Cloudflare KV namespace in place of `PropertiesService`.
+- **Firestore auth:** a dedicated service account
+  `problem-notifier@dawson-problem-bank-24a9c.iam.gserviceaccount.com` with
+  `roles/datastore.viewer` only, its key held via `wrangler secret put`. Workers
+  are V8 isolates rather than Node, so `firebase-admin` will not run and the
+  JWT (RS256 via WebCrypto) → OAuth → REST path is written by hand.
+- **Sending:** Brevo's free tier (300/day), which verifies a single sender
+  address rather than a whole domain.
+- **Sender:** a purpose-made mailbox such as
+  `Dawson Problem Bank <dawsonproblembank@gmail.com>`, with `Reply-To` set to
+  `csupiro@dawsonschool.org`. It **must not** be an `@dawsonschool.org` From
+  address — see the DMARC finding above.
+- **Cron:** `*/5 * * * *` and `0 14 * * 1`. Cloudflare cron is UTC-only, so the
+  heartbeat lands at 7am Mountain in winter and 8am in summer.
+
+Cost of the fallback: three new accounts, two stored credentials, a From line
+that is not the teacher's, and occasional spam-foldering. Its one advantage is
+that it belongs to the project rather than to an individual.
