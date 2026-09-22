@@ -62,6 +62,9 @@ function toFields(d: Record<string, unknown>): Record<string, unknown> {
     else if (Array.isArray(v) && v.every((item): item is string => typeof item === 'string')) {
       fields[key] = { arrayValue: { values: v.map(item => ({ stringValue: item })) } }
     }
+    else {
+      throw new Error(`toFields: unhandled value type for ${key}`)
+    }
   }
   return fields
 }
@@ -81,6 +84,7 @@ test('a new pending problem produces exactly one email', () => {
   assert.equal(h.sent.length, 1)
   assert.match(h.sent[0].email.subject, /One/)
   assert.deepEqual(h.sent[0].recipients, ['t@dawsonschool.org'])
+  assert.deepEqual(h.writes, [['a']], 'stored ids must be written after a successful send')
 })
 
 test('several new problems collapse into one digest', () => {
@@ -105,8 +109,8 @@ test('rejected problems are not treated as pending', () => {
 
 test('state is written only after a successful send', () => {
   const h = harness([pendingDoc('a', 'One')], [])
-  h.env.sendEmail = () => { throw new Error('Brevo down') }
-  assert.throws(() => poll(h.env), /Brevo down/)
+  h.env.sendEmail = () => { throw new Error('MailApp quota exceeded') }
+  assert.throws(() => poll(h.env), /MailApp quota exceeded/)
   assert.deepEqual(h.writes, [], 'a failed send must leave state untouched so the next cycle retries')
 })
 
@@ -138,6 +142,14 @@ test('the heartbeat reports an empty queue as healthy', () => {
   assert.match(h.sent[0].email.subject, /nothing pending/i)
 })
 
+test('the heartbeat with no configured super users sends nothing and writes nothing', () => {
+  const h = harness([pendingDoc('a', 'One')], ['a'], [])
+  heartbeat(h.env)
+  assert.equal(h.sent.length, 0)
+  assert.deepEqual(h.writes, [])
+  assert.match(h.logs.join(' '), /super user/i)
+})
+
 test('a Firestore error propagates instead of looking like an empty queue', () => {
   const h = harness([], [])
   h.env.fetchJson = () => ({ status: 403, body: 'denied' })
@@ -164,4 +176,17 @@ test('categories round-trip through the Firestore array encoding into the digest
   const h = harness([{ id: 'a', title: 'One', approved: false, categories: ['safety', 'technology'] }], [])
   poll(h.env)
   assert.match(h.sent[0].email.text, /Safety, Technology/)
+})
+
+test('submitterContact never reaches the sent email', () => {
+  const h = harness([{
+    id: 'a',
+    title: 'One',
+    approved: false,
+    submitterContact: 'family@example.com',
+  }], [])
+  poll(h.env)
+  assert.equal(h.sent.length, 1)
+  assert.ok(!h.sent[0].email.text.includes('family@example.com'), 'text body must not contain submitterContact')
+  assert.ok(!h.sent[0].email.html.includes('family@example.com'), 'html body must not contain submitterContact')
 })

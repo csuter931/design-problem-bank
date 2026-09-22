@@ -33,9 +33,14 @@ export interface NotifierEnv {
  *
  * `null` in means "never run" and passes straight through so the caller seeds
  * without emailing; do not conflate it with an empty array, which means "ran,
- * queue was empty". Valid JSON that isn't an array (e.g. `'{}'`) has no
- * usable entries, so it comes back as `[]` — that shape is not corruption,
- * just nothing recorded yet.
+ * queue was empty". An absent property reads as `null`, not `'{}'` — valid
+ * JSON that isn't an array (e.g. `'{}'`) is corruption too, just a different
+ * shape of it. It comes back as `[]`, which fails in the safe, loud
+ * direction, but it is the *opposite* branch from unparseable input below:
+ * an empty array makes `selectNew` treat the whole pending queue as new, so
+ * every currently-pending problem gets re-notified on the next cycle instead
+ * of silently missing one. Still logged, so the mass re-notification has a
+ * paper trail instead of looking like a sudden flood of new submissions.
  *
  * Unparseable JSON re-seeds — crashing every five minutes would be worse —
  * but a re-seed makes `selectNew` treat every currently-pending problem as
@@ -47,7 +52,12 @@ export function parseStoredIds(raw: string | null, log: (message: string) => voi
   if (raw === null) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+    if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+    log(
+      `Corrupt ${STORED_IDS_KEY} property (valid JSON, but not an array); treating the pending queue ` +
+      'as empty. Every currently pending problem will look new and be re-notified on the next cycle.',
+    )
+    return []
   } catch {
     log(
       `Corrupt ${STORED_IDS_KEY} property (not valid JSON); re-seeding. Every problem currently ` +
@@ -78,7 +88,7 @@ export function appsScriptEnv(): NotifierEnv {
     // The owner's own short-lived token. No service-account key exists.
     getToken: () => ScriptApp.getOAuthToken(),
 
-    readStoredIds: () => parseStoredIds(props.getProperty(STORED_IDS_KEY), console.log),
+    readStoredIds: () => parseStoredIds(props.getProperty(STORED_IDS_KEY), (m) => { console.log(m) }),
 
     writeStoredIds: (ids) => { props.setProperty(STORED_IDS_KEY, JSON.stringify(ids)) },
 

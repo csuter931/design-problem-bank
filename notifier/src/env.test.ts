@@ -26,10 +26,12 @@ test('non-string entries in an otherwise valid array are filtered out', () => {
   assert.deepEqual(messages, [])
 })
 
-test('valid JSON that is not an array comes back as empty, not corrupt', () => {
+test('valid JSON that is not an array is corruption too: empty result, logged loudly', () => {
   const { log, messages } = collector()
   assert.deepEqual(parseStoredIds('{}', log), [])
-  assert.deepEqual(messages, [])
+  assert.equal(messages.length, 1)
+  assert.match(messages[0], /corrupt/i)
+  assert.match(messages[0], /re-notified/i)
 })
 
 test('unparseable JSON re-seeds and logs a loud, specific warning', () => {
