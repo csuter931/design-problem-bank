@@ -1,6 +1,6 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-09-03
+Last updated: 2026-09-22
 
 ## Phase 1 — Rules hardening + moderation: DEPLOYED 2026-09-03
 Index, client (build `50b3221`), and rules are all live. The `problems` collection was already empty, so the backfill was a no-op. Verified in production: unauthenticated list / teams / config / unfiltered query / self-approving create all return 403; the approved-only gallery query returns 200; a wizard submission succeeds and stays hidden. Remaining checks need a signed-in human:
@@ -27,7 +27,8 @@ Palette, type, surfaces, status colours, logo, favicon, and titles are on-brand 
 - [ ] Visual review on the live site at both URLs after deploy; the headline serif (Crimson Pro) is a taste call — if it reads too formal, `font-display` is a one-line swap to Nunito in `tailwind.config.js`.
 
 ## Security — still open after Phase 1
-- [ ] **Team notes + submitter contact are readable by any Dawson account** — better than world-readable, but not private. Firestore has no field-level read rules; move `internalNotes` and `submitterContact` to `problems/{id}/private/detail` with a Dawson/team-scoped read rule. Touches the wizard write path and adds a listener, so it is its own release. The migration needs write access the hardened rules deny — use a self-expiring rules clause (`request.time < timestamp.date(...)`) that can only *remove* those fields.
+- [ ] **Team notes + submitter contact are world-readable on approved problems** *(severity corrected 2026-09-22 — this was previously written up as "readable by any Dawson account", which understated it)*. There is no sign-in involved: `allow get` and `allow list` both pass for anonymous traffic once `approved == true`, and Firestore has no field-level read rules, so the full document — `internalNotes` and `submitterContact` included — is delivered to every gallery visitor. The UI gates the *render* (`ProblemDetail.tsx`, super-user block only), which is why this is easy to miss; the data is still there in the devtools Network tab. Pending / rejected docs are genuinely super-user only, so the old description holds for those. Worth weighing when scheduling: submitters are told their problem goes to a teacher for review, so a contact email they gave the school is currently retrievable by anyone who opens an approved problem — this is a privacy commitment, not just a leak.
+  **Fix:** move `internalNotes` and `submitterContact` to `problems/{id}/private/detail` with a Dawson/team-scoped read rule. Touches the wizard write path and adds a listener, so it is its own release. The migration needs write access the hardened rules deny — use a self-expiring rules clause (`request.time < timestamp.date(...)`) that can only *remove* those fields.
 - [ ] **Team ownership is not enforced** — any Dawson student can change status on any approved problem, not just their own team's. Needs `claimedByTeam` to be checked against the caller's `teams/{uid}` doc in the rules.
 - [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
 - [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
