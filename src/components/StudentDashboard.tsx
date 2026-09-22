@@ -410,7 +410,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   </>
                 )}
                 {team && (
-                  <span className="text-xs px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary font-medium">
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-white/[0.12] border border-white/[0.28] text-white/90 font-medium">
                     👥 {team.name}
                   </span>
                 )}

@@ -173,7 +173,7 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
             <div className="flex flex-wrap gap-1.5">
               {categoryOptions.map(c => (
                 <button key={c.value} onClick={() => toggleTag(categories, setCategories, c.value)}
-                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${categories.includes(c.value) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
+                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${categories.includes(c.value) ? 'bg-primary border-primary text-white' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
                   {c.label}
                 </button>
               ))}
@@ -185,7 +185,7 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
             <div className="flex flex-wrap gap-1.5">
               {disciplineOptions.map(d => (
                 <button key={d.value} onClick={() => toggleTag(disciplines, setDisciplines, d.value)}
-                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${disciplines.includes(d.value) ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
+                  className={`px-2.5 py-1 rounded-full text-xs border capitalize transition-all ${disciplines.includes(d.value) ? 'bg-primary border-primary text-white' : 'border-white/[0.12] text-white/40 hover:text-white/70'}`}>
                   {d.label}
                 </button>
               ))}

@@ -218,7 +218,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
                 <div key={s} className="flex items-center gap-2 flex-1">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
                     s < step ? 'bg-primary border-primary text-white' :
-                    s === step ? 'border-primary text-primary bg-primary/10' :
+                    s === step ? 'border-dawson-carolina text-dawson-carolina bg-dawson-carolina/10' :
                     'border-white/20 text-white/30'
                   }`}>{s < step ? '✓' : s}</div>
                   <span className={`text-xs hidden sm:block ${s === step ? 'text-white/70' : 'text-white/25'}`}>
