@@ -293,26 +293,6 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     </div>
                   </div>
                 )}
-                {/* Submitter contact. Shown for EVERY problem, not just
-                    pending ones — a teacher needs it most *after* approving,
-                    to put a student team in touch. It used to live inside the
-                    pending banner above, so it vanished the moment a problem
-                    was approved. The empty and loading states are spelled out
-                    because it is fetched from problems/{id}/private/detail:
-                    rendering nothing made "no contact on file" and "still
-                    loading" indistinguishable. */}
-                <p className="mb-3 text-xs">
-                  <span className="text-white/45">Submitter contact: </span>
-                  {privateDetail === null ? (
-                    <span className="text-white/35">loading…</span>
-                  ) : privateDetail.submitterContact ? (
-                    <a href={`mailto:${privateDetail.submitterContact}`} className="text-dawson-carolina hover:underline">
-                      {privateDetail.submitterContact}
-                    </a>
-                  ) : (
-                    <span className="text-white/35">none on file</span>
-                  )}
-                </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => onEdit?.(problem)}
@@ -389,9 +369,32 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
               </div>
             )}
 
-            {/* Internal notes — visible to claiming team or super user */}
+            {/* Submitter contact + internal notes — both come from
+                problems/{id}/private/detail and share one audience: the
+                claiming team or a super user. The contact used to sit inside
+                the super-user pending banner, which hid it from the team who
+                actually has to get in touch, and hid it from teachers too the
+                moment they approved. Loading and empty states are spelled out
+                because it is fetched separately from the problem: rendering
+                nothing made "no contact on file" and "still loading" look
+                identical. */}
             {canSeeNotes && (
               <div>
+                <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                  Submitter contact
+                </h3>
+                <p className="mb-5 text-sm">
+                  {privateDetail === null ? (
+                    <span className="text-white/35">Loading…</span>
+                  ) : privateDetail.submitterContact ? (
+                    <a href={`mailto:${privateDetail.submitterContact}`} className="text-dawson-carolina hover:underline">
+                      {privateDetail.submitterContact}
+                    </a>
+                  ) : (
+                    <span className="text-white/45">None on file.</span>
+                  )}
+                </p>
+
                 <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
                   Team Notes{' '}
                   <span className="normal-case font-normal text-white/50">
