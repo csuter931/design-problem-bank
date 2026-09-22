@@ -28,6 +28,35 @@ export interface NotifierEnv {
   log(message: string): void
 }
 
+/**
+ * Parses the raw `notifiedProblemIds` property into an id list.
+ *
+ * `null` in means "never run" and passes straight through so the caller seeds
+ * without emailing; do not conflate it with an empty array, which means "ran,
+ * queue was empty". Valid JSON that isn't an array (e.g. `'{}'`) has no
+ * usable entries, so it comes back as `[]` — that shape is not corruption,
+ * just nothing recorded yet.
+ *
+ * Unparseable JSON re-seeds — crashing every five minutes would be worse —
+ * but a re-seed makes `selectNew` treat every currently-pending problem as
+ * already notified, so nothing gets emailed for this cycle. That is exactly
+ * the missed-notification failure this feature exists to prevent, so it is
+ * logged loudly rather than swallowed.
+ */
+export function parseStoredIds(raw: string | null, log: (message: string) => void): string[] | null {
+  if (raw === null) return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+  } catch {
+    log(
+      `Corrupt ${STORED_IDS_KEY} property (not valid JSON); re-seeding. Every problem currently ` +
+      'awaiting review will be marked as already notified and no email will be sent for this cycle.',
+    )
+    return null
+  }
+}
+
 export function appsScriptEnv(): NotifierEnv {
   const props = PropertiesService.getScriptProperties()
 
@@ -49,19 +78,7 @@ export function appsScriptEnv(): NotifierEnv {
     // The owner's own short-lived token. No service-account key exists.
     getToken: () => ScriptApp.getOAuthToken(),
 
-    readStoredIds: () => {
-      const raw = props.getProperty(STORED_IDS_KEY)
-      // null means "never run" and triggers a silent seed; do not conflate it
-      // with an empty array, which means "ran, queue was empty".
-      if (raw === null) return null
-      try {
-        const parsed: unknown = JSON.parse(raw)
-        return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
-      } catch {
-        // Corrupt state re-seeds rather than crashing every five minutes.
-        return null
-      }
-    },
+    readStoredIds: () => parseStoredIds(props.getProperty(STORED_IDS_KEY), console.log),
 
     writeStoredIds: (ids) => { props.setProperty(STORED_IDS_KEY, JSON.stringify(ids)) },
 

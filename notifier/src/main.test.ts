@@ -5,7 +5,7 @@ import type { NotifierEnv } from './env.ts'
 import type { BuiltEmail } from './email.ts'
 
 const PROJECT = 'test-project'
-const URL = 'https://example.test/dashboard/?tab=pending'
+const DASHBOARD = 'https://example.test/dashboard/?tab=pending'
 
 interface Sent { recipients: string[]; email: BuiltEmail }
 
@@ -24,7 +24,7 @@ function harness(docs: Array<Record<string, unknown>>, stored: string[] | null, 
   let current = stored
   const env: NotifierEnv = {
     projectId: PROJECT,
-    dashboardUrl: URL,
+    dashboardUrl: DASHBOARD,
     fetchJson: (url) => {
       if (url.endsWith(':runQuery')) {
         return {
@@ -59,6 +59,9 @@ function toFields(d: Record<string, unknown>): Record<string, unknown> {
     if (typeof v === 'string') fields[key] = { stringValue: v }
     else if (typeof v === 'boolean') fields[key] = { booleanValue: v }
     else if (typeof v === 'number') fields[key] = { integerValue: String(v) }
+    else if (Array.isArray(v) && v.every((item): item is string => typeof item === 'string')) {
+      fields[key] = { arrayValue: { values: v.map(item => ({ stringValue: item })) } }
+    }
   }
   return fields
 }
@@ -139,4 +142,26 @@ test('a Firestore error propagates instead of looking like an empty queue', () =
   const h = harness([], [])
   h.env.fetchJson = () => ({ status: 403, body: 'denied' })
   assert.throws(() => poll(h.env), /403/)
+})
+
+test('the digest lists pending problems oldest first regardless of arrival order', () => {
+  const h = harness([
+    { id: 'b', title: 'Middle', approved: false, createdAt: 2000 },
+    { id: 'c', title: 'Newest', approved: false, createdAt: 3000 },
+    { id: 'a', title: 'Oldest', approved: false, createdAt: 1000 },
+  ], [])
+  poll(h.env)
+  const text = h.sent[0].email.text
+  const oldestIndex = text.indexOf('Oldest')
+  const middleIndex = text.indexOf('Middle')
+  const newestIndex = text.indexOf('Newest')
+  assert.ok(oldestIndex >= 0 && middleIndex >= 0 && newestIndex >= 0, 'all three titles must appear')
+  assert.ok(oldestIndex < middleIndex, 'oldest problem must be listed before the middle one')
+  assert.ok(middleIndex < newestIndex, 'middle problem must be listed before the newest one')
+})
+
+test('categories round-trip through the Firestore array encoding into the digest', () => {
+  const h = harness([{ id: 'a', title: 'One', approved: false, categories: ['safety', 'technology'] }], [])
+  poll(h.env)
+  assert.match(h.sent[0].email.text, /Safety, Technology/)
 })
