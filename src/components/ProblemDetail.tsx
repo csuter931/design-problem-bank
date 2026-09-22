@@ -275,9 +275,6 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     <p className="font-semibold">
                       {rejected ? '🚫 Rejected — hidden from the public gallery' : '⏳ Pending review — not yet visible in the public gallery'}
                     </p>
-                    {privateDetail?.submitterContact && (
-                      <p className="mt-1 text-white/70">Contact: {privateDetail.submitterContact}</p>
-                    )}
                     <div className="flex flex-wrap gap-2 mt-2">
                       <button
                         onClick={() => onApprove?.(problem.id)}
@@ -296,6 +293,26 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     </div>
                   </div>
                 )}
+                {/* Submitter contact. Shown for EVERY problem, not just
+                    pending ones — a teacher needs it most *after* approving,
+                    to put a student team in touch. It used to live inside the
+                    pending banner above, so it vanished the moment a problem
+                    was approved. The empty and loading states are spelled out
+                    because it is fetched from problems/{id}/private/detail:
+                    rendering nothing made "no contact on file" and "still
+                    loading" indistinguishable. */}
+                <p className="mb-3 text-xs">
+                  <span className="text-white/45">Submitter contact: </span>
+                  {privateDetail === null ? (
+                    <span className="text-white/35">loading…</span>
+                  ) : privateDetail.submitterContact ? (
+                    <a href={`mailto:${privateDetail.submitterContact}`} className="text-dawson-carolina hover:underline">
+                      {privateDetail.submitterContact}
+                    </a>
+                  ) : (
+                    <span className="text-white/35">none on file</span>
+                  )}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => onEdit?.(problem)}
