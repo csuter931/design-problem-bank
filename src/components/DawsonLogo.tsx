@@ -6,7 +6,11 @@
 // plate. Keep the safety space (≈ the height of "SCHOOL") clear around it, and
 // never recolour, stretch, or crop it. The full-colour mark (light backgrounds
 // only) is kept out of the bundle in the gitignored brand/ folder.
-export function DawsonLogo({ imgClass = 'h-9' }: { imgClass?: string }) {
+//
+// Minimum size: the mark is a stacked lockup and the "SCHOOL" line under the
+// wordmark is only ~6% of its height, so below roughly 48px that line stops
+// resolving and the logo reads as a smudge. Do not go under h-12.
+export function DawsonLogo({ imgClass = 'h-12' }: { imgClass?: string }) {
   return (
     <img
       src={`${import.meta.env.BASE_URL}dawson-logo-white.png`}

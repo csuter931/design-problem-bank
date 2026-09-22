@@ -333,15 +333,19 @@ function App() {
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-7 bg-[linear-gradient(180deg,transparent_0%,rgb(0_8_26/0.5)_100%)]" />
 
           {/* Top nav row */}
-          <div className="relative z-10 max-w-5xl mx-auto flex items-center justify-between mb-14">
-            <div className="flex items-center gap-3">
-              <DawsonLogo />
-              <div>
-                <h1 className="font-bold text-lg tracking-tight text-white leading-none font-display">
-                  Design Problem Bank
-                </h1>
-                <p className="text-xs text-white/65 mt-0.5">Dawson School · Real problems. Creative solutions.</p>
-              </div>
+          {/* Co-brand lockup: the school mark and the app name are two separate
+              marks sharing a bar, so they are separated by a hairline rule at
+              the logo's safety space rather than stacked with a tagline. The
+              logo already says "Dawson School" — repeating it in subtext was
+              redundant, and the old h-9 size dropped the "SCHOOL" line below
+              the point where it resolves. */}
+          <div className="relative z-10 max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-y-5 mb-14">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <DawsonLogo imgClass="h-14 sm:h-16" />
+              <div className="h-9 sm:h-11 w-px bg-white/25" aria-hidden="true" />
+              <h1 className="font-bold text-lg sm:text-2xl tracking-tight text-white leading-none font-display whitespace-nowrap">
+                Design Problem Bank
+              </h1>
             </div>
             <div className="flex items-center gap-5 text-sm text-white/65">
               <span><AnimatedNumber value={problems.length} className="text-white font-semibold" /> Problems</span>
