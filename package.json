@@ -16,7 +16,9 @@
     "emulators": "firebase emulators:start --only firestore",
     "emulators:seed": "node scripts/seed-emulator.mjs",
     "dev:emulator": "vite --mode emulator",
-    "problems:backfill": "node scripts/backfill-approved.mjs"
+    "problems:backfill": "node scripts/backfill-approved.mjs",
+    "notifier:build": "node notifier/build.mjs",
+    "notifier:push": "node notifier/build.mjs && cd notifier && clasp push --force"
   },
   "dependencies": {
     "firebase": "^12.11.0",

@@ -45,3 +45,7 @@ ui-debug.log
 database-debug.log
 firebase-debug.log
 .firebase/
+
+# Apps Script notifier — generated bundle and the per-install script id
+notifier/build/
+notifier/.clasp.json
