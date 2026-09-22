@@ -43,8 +43,13 @@ if (onlyIds.length) {
 console.log(`Restoring ${wanted.length} problem(s) from ${file}...\n`)
 
 let ok = 0
+let privOk = 0
+let privFail = 0
 for (const problem of wanted) {
-  const { __id, ...data } = problem
+  // `__private` holds the submitter contact and team notes, which live in
+  // problems/{id}/private/detail rather than on the problem document — see
+  // lib/privateDetail.ts. Exports made before that split will not have it.
+  const { __id, __private, ...data } = problem
   const fields = {}
   for (const [k, v] of Object.entries(data)) fields[k] = toFirestoreValue(v)
 
@@ -59,7 +64,25 @@ for (const problem of wanted) {
     console.log(`✓ ${__id}  ${problem.title || '(untitled)'}`)
   } else {
     console.error(`✗ ${__id}  ${body.error?.message || JSON.stringify(body)}`)
+    continue
+  }
+
+  if (__private && Object.keys(__private).length) {
+    const privFields = {}
+    for (const [k, v] of Object.entries(__private)) privFields[k] = toFirestoreValue(v)
+    const pRes = await fetch(
+      `${BASE_URL}/problems/${encodeURIComponent(__id)}/private?documentId=detail`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: privFields }) },
+    )
+    if (pRes.ok) {
+      privOk++
+    } else {
+      privFail++
+      const pBody = await pRes.json()
+      console.error(`  ✗ private/detail for ${__id}: ${pBody.error?.message || JSON.stringify(pBody)}`)
+    }
   }
 }
 
 console.log(`\nDone. ${ok}/${wanted.length} restored.`)
+if (privOk || privFail) console.log(`private/detail: ${privOk} restored, ${privFail} failed.`)

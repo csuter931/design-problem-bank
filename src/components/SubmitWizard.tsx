@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { collection, addDoc } from 'firebase/firestore'
+import { collection, addDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { privateDetailRef } from '@/lib/privateDetail'
 import { CATEGORY_OPTIONS, DISCIPLINE_OPTIONS } from '@/lib/problemMeta'
 
 const CLOUDINARY_CLOUD = 'dexhdf03b'
@@ -130,7 +131,7 @@ export function SubmitWizard({ onClose }: WizardProps) {
         photoUrls.push(data.secure_url)
       }
 
-      await addDoc(collection(db, 'problems'), {
+      const problemRef = await addDoc(collection(db, 'problems'), {
         title: title.trim(),
         description: description.trim(),
         affects: affects.trim(),
@@ -145,7 +146,6 @@ export function SubmitWizard({ onClose }: WizardProps) {
         disciplines,
         submitterName: name.trim(),
         submitterRole: role.trim(),
-        submitterContact: contact.trim(),
         willingness,
         resources: resources.trim(),
         photos: photoUrls,
@@ -157,6 +157,24 @@ export function SubmitWizard({ onClose }: WizardProps) {
         approved: false,
         createdAt: Date.now(),
       })
+
+      // The contact goes in problems/{id}/private/detail, never on the
+      // problem itself — every field of an approved problem is world-readable
+      // (see lib/privateDetail.ts). Written after the problem so the rules can
+      // confirm the parent exists and is unapproved; a batch would evaluate
+      // against the pre-write state, where the parent does not exist yet.
+      //
+      // Deliberately not fatal: the submission itself already succeeded, and
+      // failing here would push the submitter into resubmitting a duplicate.
+      // Worst case a teacher has a problem with no contact on it.
+      const trimmedContact = contact.trim()
+      if (trimmedContact) {
+        try {
+          await setDoc(privateDetailRef(problemRef.id), { submitterContact: trimmedContact })
+        } catch (e) {
+          console.error('failed to save submitter contact:', e)
+        }
+      }
       setDone(true)
     } catch (err) {
       console.error(err)

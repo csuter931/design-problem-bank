@@ -52,6 +52,7 @@ Source of truth: `Dawson Brand Manual_Quick Reference Guide_Updated 2023.pdf` in
 - `components/ManageTeamsModal.tsx` — super-user team list/delete
 - `lib/firebase.ts` — Firebase app/auth/Firestore init (public API key lives here)
 - `lib/problemMeta.ts` — shared status/severity/category/discipline constants (single source of truth for tag vocabularies)
+- `lib/privateDetail.ts` — the `problems/{id}/private/detail` document (submitter contact + team notes) that keeps those two fields off the world-readable problem doc: the ref, the `usePrivateDetail` subscription hook, and the note/contact writers
 - `lib/moderation.ts` (+ test) — `isApproved` / `isPendingReview` / `isRejected` / `partitionByReview`; a doc missing `approved` reads as pending (fails safe)
 - `lib/teams.ts` (+ `teams.test.ts`) — team grouping logic used by ManageTeamsModal
 - `lib/votes.ts` — localStorage-based one-upvote-per-browser tracking
@@ -84,7 +85,11 @@ Two identities are defined in the rules: **Dawson** = signed in with a verified 
 - `teams/{uid}` — one doc per member, doc ID = user uid, `{ name, members, joinedAt }`; a "team" is the set of docs sharing a `name`. Read: Dawson. Create/update: own doc, shape-checked. Delete: own doc, or any doc as a super user (Manage Teams)
 - `config/superusers { emails: [] }` — read: Dawson; write: disabled (edit in Firebase console only). **Entries must be lowercase** — the rule lowercases the signed-in email but cannot lowercase the stored list. A capitalised entry silently locks that teacher out of every super-user action; the dashboard shows a red banner when it detects this
 
-> ⚠️ Remaining gaps (tracked in TODO.md): on an **approved** problem, `internalNotes` and `submitterContact` are **world-readable — no sign-in required**. `allow get` / `allow list` both pass for anonymous traffic once `approved == true`, and Firestore has no field-level read rules, so the *whole* document reaches every gallery visitor's browser. The UI only renders the contact inside the super-user block (`ProblemDetail.tsx`), so it is never displayed — but it is one devtools Network tab away. On pending / rejected docs both fields genuinely are super-user only. The fix is a private subcollection. Separately, team ownership is not enforced (any Dawson student can change the status of any approved problem).
+- `problems/{id}/private/detail` — the **private half** of a problem: `submitterContact` and `internalNotes`. Read: Dawson. Create: the anonymous wizard (contact only, and only while the parent is still unapproved), a Dawson user (notes only), or a super user. Update: notes by any Dawson user, anything by a super user. Delete: super users. Doc id is always `detail`.
+>
+> **Why a subcollection:** Firestore has no field-level read rules, and the public gallery must read approved problem documents — so *every* field on a problem is world-readable once approved. Hiding a field in the UI does not make it private. Anything that must not be public has to live in a separate document. See `lib/privateDetail.ts`.
+
+> ⚠️ Remaining gap (tracked in TODO.md): team ownership is not enforced — any Dawson student can change the status of any approved problem, not just their own team's.
 
 ## Moderation (review queue)
 A submitted problem is **not public until a teacher approves it** — enforced by the rules above, not just the UI.
@@ -109,7 +114,7 @@ The new client works under the old rules, but the old client does not work under
 ## Resetting the bank
 > **Under the hardened rules, the REST maintenance scripts are locked out.** `problems:backup` is denied (unconstrained list), so `problems:clear` aborts before deleting anything (it fails safe — the `&&` never reaches the delete). Restore is denied for anything but a pristine new problem. Use the paths below.
 
-**Backup**: sign in as a super user and click **⬇ Export JSON** in the dashboard header. It downloads every problem (including pending) in the same `__id` + fields shape as the old backup script, so `restore-problems.mjs` can still read it. Keep the file out of the repo — it contains submitter contact info.
+**Backup**: sign in as a super user and click **⬇ Export JSON** in the dashboard header. It downloads every problem (including pending) in the same `__id` + fields shape as the old backup script, so `restore-problems.mjs` can still read it. Each row also carries a `__private` key holding that problem's `private/detail` (contact + notes), fetched one read per problem — **without it a backup would silently lose exactly the data that cannot be recreated**. Restore writes `__private` back to the subcollection; older exports simply have no `__private` key. Keep the file out of the repo — it contains submitter contact info.
 
 **Clear**: with a fresh export in hand, delete via the Firebase CLI (admin credentials; `firebase login --reauth` if expired):
 

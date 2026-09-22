@@ -44,7 +44,7 @@ const problem = (over) => ({
   description: 'Lorem ipsum — a realistic multi-sentence description of the problem so the card and detail modal have something to render.',
   affects: 'Students in the makerspace', where: 'Makerspace', frequency: 'daily', duration: 'Since last year',
   workaround: '', priorAttempts: '', constraints: '', categories: ['workspace'], disciplines: ['product-design'],
-  submitterName: 'Sam Submitter', submitterRole: 'Teacher', submitterContact: 'sam@example.com',
+  submitterName: 'Sam Submitter', submitterRole: 'Teacher',
   willingness: 'full', resources: '', photos: [], status: 'new', upvotes: 0, comments: [], severity: 3,
   ...over,
 })
@@ -60,13 +60,20 @@ await put('config/superusers', { emails: [superUser] })
 await put('problems/approved-new', problem({ title: 'Approved — available to claim', approved: true, createdAt: now - 1 * day, upvotes: 4,
   comments: [{ text: 'Great idea', author: 'Pat', createdAt: now - day }], reviewedBy: superUser, reviewedAt: now - day }))
 await put('problems/approved-claimed', problem({ title: 'Approved — claimed by Alpha', approved: true, status: 'claimed', createdAt: now - 3 * day,
-  claimedByTeam: 'Alpha', claimedByUser: 'Kid', claimedAt: now - 2 * day, internalNotes: [] }))
+  claimedByTeam: 'Alpha', claimedByUser: 'Kid', claimedAt: now - 2 * day }))
 await put('problems/approved-solved', problem({ title: 'Approved — solved', approved: true, status: 'solved', createdAt: now - 20 * day,
   claimedByTeam: 'Alpha', solvedAt: now - 5 * day, severity: 5 }))
 await put('problems/pending-1', problem({ title: 'PENDING — fresh submission', approved: false, createdAt: now - 3_600_000, severity: 4 }))
 await put('problems/pending-2', problem({ title: 'PENDING — older submission', approved: false, createdAt: now - 2 * day, severity: 2 }))
 await put('problems/rejected-1', problem({ title: 'REJECTED — hidden but restorable', approved: false, rejectedAt: now - day, reviewedBy: superUser, reviewedAt: now - day, createdAt: now - 4 * day }))
 await put('problems/legacy-no-field', problem({ title: 'LEGACY — no approved field (should read as pending)', createdAt: now - 30 * day }))
+
+// Contact + team notes live off the problem document — every field on an
+// approved problem is world-readable. See src/lib/privateDetail.ts.
+await put('problems/approved-new/private/detail', { submitterContact: 'sam@example.com' })
+await put('problems/approved-claimed/private/detail', { submitterContact: 'sam@example.com',
+  internalNotes: [{ author: 'Kid', text: 'Emailed Sam, meeting Tuesday.', createdAt: now - day }] })
+await put('problems/pending-1/private/detail', { submitterContact: 'fresh@example.com' })
 
 console.log(`\nSeeded. Super user: ${superUser}`)
 console.log('Public gallery should show 3 problems; the Pending tab should show 3 (2 pending + legacy) and 1 rejected.')

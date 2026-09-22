@@ -35,10 +35,14 @@ async function seed() {
   await env.withSecurityRulesDisabled(async ctx => {
     const db = ctx.firestore()
     await db.doc('config/superusers').set({ emails: ['teacher@dawsonschool.org'] })
-    await db.doc('problems/approved1').set({ ...base, approved: true, status: 'new', upvotes: 3, comments: [comment(1)], submitterContact: 'a@b.c' })
+    await db.doc('problems/approved1').set({ ...base, approved: true, status: 'new', upvotes: 3, comments: [comment(1)] })
     await db.doc('problems/pending1').set({ ...base, approved: false, status: 'new', upvotes: 0, comments: [] })
     await db.doc('problems/legacy1').set({ ...base, status: 'new', upvotes: 0, comments: [] }) // no `approved` field at all
-    await db.doc('problems/claimed1').set({ ...base, approved: true, status: 'claimed', upvotes: 0, comments: [], claimedByTeam: 'Alpha', claimedByUser: 'Kid', claimedAt: 1, internalNotes: [] })
+    await db.doc('problems/claimed1').set({ ...base, approved: true, status: 'claimed', upvotes: 0, comments: [], claimedByTeam: 'Alpha', claimedByUser: 'Kid', claimedAt: 1 })
+    // Contact + team notes live OFF the problem doc — the public read rule
+    // makes every field of an approved problem world-readable.
+    await db.doc('problems/approved1/private/detail').set({ submitterContact: 'a@b.c' })
+    await db.doc('problems/claimed1/private/detail').set({ submitterContact: 'c@d.e', internalNotes: [] })
     await db.doc('teams/student1').set({ name: 'Alpha', members: '', joinedAt: 1 })
     await db.doc('teams/student2').set({ name: 'Alpha', members: '', joinedAt: 2 })
   })
@@ -118,10 +122,10 @@ describe('problems: read', () => {
 
 // ── Create ────────────────────────────────────────────────────────────────
 describe('problems: create', () => {
-  test('anon: the submit-wizard payload succeeds', async () => {
+  test('anon: the submit-wizard payload succeeds (contact now goes to private/detail, not here)', async () => {
     await assertSucceeds(anon().collection('problems').add({
       ...newProblem, affects: 'x', severity: 3, categories: ['safety'], disciplines: [],
-      submitterName: 'Pat', submitterRole: 'Parent', submitterContact: 'pat@example.com',
+      submitterName: 'Pat', submitterRole: 'Parent',
       willingness: 'full', resources: '', photos: [],
     }))
   })
@@ -234,8 +238,8 @@ describe('problems: student workflow', () => {
     assert.equal(snap.get('status'), 'new')
     assert.equal(snap.get('claimedByTeam'), undefined)
   })
-  test('team note arrayUnion succeeds', async () => {
-    await assertSucceeds(me().doc('problems/claimed1').update({
+  test('team notes may no longer be written to the problem doc — they moved to private/detail', async () => {
+    await assertFails(me().doc('problems/claimed1').update({
       internalNotes: FieldValue.arrayUnion({ author: 'Kid', text: 'met the client', createdAt: 1 }),
     }))
   })
@@ -321,5 +325,77 @@ describe('teams', () => {
   test("super user can delete another member's slot (Manage Teams)", async () => {
     await assertSucceeds(as(TEACHER).doc('teams/student2').delete())
     await assertFails(as(STUDENT).doc('teams/student2').delete())
+  })
+})
+
+// ── Private detail subcollection ──────────────────────────────────────────
+// The whole point of this collection: Firestore has no field-level read
+// rules, so anything left on an approved problem document is world-readable
+// to anyone who opens the gallery's network tab. Contact + team notes live
+// here instead, behind isDawson().
+describe('problems/{id}/private/detail', () => {
+  const detail = (id: string) => `problems/${id}/private/detail`
+  const note = { author: 'Kid', text: 'met the client', createdAt: 1 }
+
+  async function dropDetail(id: string) {
+    await env.withSecurityRulesDisabled(async ctx => { await ctx.firestore().doc(detail(id)).delete() })
+  }
+
+  test('anon cannot read the contact on an approved problem (the whole point)', async () => {
+    await assertSucceeds(anon().doc('problems/approved1').get())   // the problem stays public…
+    await assertFails(anon().doc(detail('approved1')).get())       // …its contact does not
+  })
+  test('anon cannot list or collection-group the private docs', async () => {
+    await assertFails(anon().collection('problems/approved1/private').get())
+    await assertFails(as(RANDO).doc(detail('approved1')).get())
+  })
+  test('Dawson students and super users can read it', async () => {
+    await assertSucceeds(as(STUDENT).doc(detail('approved1')).get())
+    await assertSucceeds(as(TEACHER).doc(detail('approved1')).get())
+    const snap = await as(STUDENT).doc(detail('approved1')).get()
+    assert.equal(snap.get('submitterContact'), 'a@b.c')
+  })
+
+  test('the anonymous wizard may write a contact-only detail on its new submission', async () => {
+    await assertSucceeds(anon().doc(detail('pending1')).set({ submitterContact: 'new@sub.org' }))
+  })
+  test('the wizard cannot smuggle notes or extra keys through the create', async () => {
+    await dropDetail('approved1')
+    await assertFails(anon().doc(detail('pending1')).set({ submitterContact: 'x@y.z', internalNotes: [note] }))
+    await assertFails(anon().doc(detail('pending1')).set({ internalNotes: [note] }))
+    await assertFails(anon().doc(detail('pending1')).set({ submitterContact: 'x'.repeat(201) }))
+    await assertFails(anon().doc(detail('pending1')).set({ submitterContact: 123 }))
+    await assertFails(anon().doc('problems/pending1/private/other').set({ submitterContact: 'x@y.z' }))
+  })
+  test('anon cannot create a detail on an already-approved problem', async () => {
+    await dropDetail('approved1')
+    await assertFails(anon().doc(detail('approved1')).set({ submitterContact: 'spam@evil.com' }))
+  })
+  test('anon cannot overwrite or delete an existing detail', async () => {
+    await assertFails(anon().doc(detail('approved1')).set({ submitterContact: 'spam@evil.com' }))
+    await assertFails(anon().doc(detail('approved1')).update({ submitterContact: 'spam@evil.com' }))
+    await assertFails(anon().doc(detail('approved1')).delete())
+  })
+
+  test('a Dawson student may append notes, creating the doc when absent', async () => {
+    await assertSucceeds(as(STUDENT).doc(detail('claimed1')).set({ internalNotes: FieldValue.arrayUnion(note) }, { merge: true }))
+    await dropDetail('claimed1')
+    await assertSucceeds(as(STUDENT).doc(detail('claimed1')).set({ internalNotes: [note] }))
+  })
+  test('a student cannot read-modify the contact, and a non-Dawson account cannot write at all', async () => {
+    await assertFails(as(STUDENT).doc(detail('approved1')).update({ submitterContact: 'hijack@evil.com' }))
+    await assertFails(as(STUDENT).doc(detail('approved1')).update({ internalNotes: [note], submitterContact: 'hijack@evil.com' }))
+    await assertFails(as(STUDENT).doc(detail('approved1')).delete())
+    await assertFails(as(RANDO).doc(detail('approved1')).set({ internalNotes: [note] }, { merge: true }))
+  })
+  test('a super user may edit the contact and delete the detail', async () => {
+    await assertSucceeds(as(TEACHER).doc(detail('approved1')).update({ submitterContact: 'fixed@b.c' }))
+    await assertSucceeds(as(TEACHER).doc(detail('approved1')).delete())
+  })
+
+  test('the problem document itself can no longer carry either field', async () => {
+    await assertFails(anon().collection('problems').add({ ...newProblem, submitterContact: 'a@b.c' }))
+    await assertFails(as(STUDENT).doc('problems/claimed1').update({ internalNotes: [note] }))
+    await assertFails(as(STUDENT).doc('problems/claimed1').update({ status: 'inprogress', internalNotes: [note] }))
   })
 })

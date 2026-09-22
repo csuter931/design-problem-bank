@@ -3,6 +3,7 @@ import { doc, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Problem } from '@/components/ProblemDetail'
 import { CATEGORY_OPTIONS, DISCIPLINE_OPTIONS, type TagOption } from '@/lib/problemMeta'
+import { usePrivateDetail, saveSubmitterContact } from '@/lib/privateDetail'
 
 // Canonical options plus any legacy tags already on the problem (from older
 // taxonomies), so existing tags stay visible and removable in the editor.
@@ -29,11 +30,23 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
   const [disciplines, setDisciplines] = useState<string[]>(problem.disciplines ?? [])
   const [submitterName, setSubmitterName] = useState(problem.submitterName ?? '')
   const [submitterRole, setSubmitterRole] = useState(problem.submitterRole ?? '')
-  const [submitterContact, setSubmitterContact] = useState(problem.submitterContact ?? '')
+  // The contact lives in problems/{id}/private/detail, so it arrives async
+  // rather than on the problem prop. Seed the field once, the first time the
+  // document resolves, so a teacher who starts typing is not overwritten.
+  const privateDetail = usePrivateDetail(problem.id, true)
+  const [submitterContact, setSubmitterContact] = useState('')
+  const [contactSeeded, setContactSeeded] = useState(false)
   const [workaround, setWorkaround] = useState(problem.workaround ?? '')
   const [constraints, setConstraints] = useState(problem.constraints ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (privateDetail && !contactSeeded) {
+      setSubmitterContact(privateDetail.submitterContact ?? '')
+      setContactSeeded(true)
+    }
+  }, [privateDetail, contactSeeded])
 
   const categoryOptions = withLegacyTags(CATEGORY_OPTIONS, problem.categories ?? [])
   const disciplineOptions = withLegacyTags(DISCIPLINE_OPTIONS, problem.disciplines ?? [])
@@ -68,7 +81,6 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
       disciplines,
       submitterName: submitterName.trim() || f,
       submitterRole: submitterRole.trim() || f,
-      submitterContact: submitterContact.trim() || f,
       workaround: workaround.trim() || f,
       constraints: constraints.trim() || f,
     }
@@ -82,12 +94,13 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
       disciplines,
       submitterName: submitterName.trim() || undefined,
       submitterRole: submitterRole.trim() || undefined,
-      submitterContact: submitterContact.trim() || undefined,
       workaround: workaround.trim() || undefined,
       constraints: constraints.trim() || undefined,
     }
     try {
       await updateDoc(doc(db, 'problems', problem.id), firestoreUpdates)
+      // Separate document, separate write — see lib/privateDetail.ts.
+      if (contactSeeded) await saveSubmitterContact(problem.id, submitterContact)
       onSaved({ ...problem, ...localUpdates })
     } catch (e) {
       console.error('editProblem error:', e)
@@ -192,7 +205,7 @@ export function EditProblemModal({ problem, onClose, onSaved }: {
 
           <div>
             <label className={labelCls}>Submitter contact</label>
-            <input value={submitterContact} onChange={e => setSubmitterContact(e.target.value)} className={inputCls} placeholder="email or phone" />
+            <input value={submitterContact} onChange={e => setSubmitterContact(e.target.value)} disabled={!contactSeeded} className={inputCls} placeholder={contactSeeded ? 'email or phone' : 'Loading…'} />
           </div>
 
           <div>

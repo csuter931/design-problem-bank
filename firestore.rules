@@ -57,9 +57,9 @@ service cloud.firestore {
           && d.comments is list && d.comments.size() == 0
           && d.title is string && d.title.size() > 0 && d.title.size() <= 200
           && d.description is string && d.description.size() <= 5000
-          && !d.keys().hasAny(['internalNotes', 'claimedByTeam', 'claimedByUser',
-                                'claimedAt', 'solvedAt', 'reviewedBy', 'reviewedAt',
-                                'rejectedAt']);
+          && !d.keys().hasAny(['internalNotes', 'submitterContact', 'claimedByTeam',
+                                'claimedByUser', 'claimedAt', 'solvedAt', 'reviewedBy',
+                                'reviewedAt', 'rejectedAt']);
       }
       allow create: if isValidNewProblem();
 
@@ -90,18 +90,62 @@ service cloud.firestore {
           && isValidComment(newC[newC.size() - 1]);
       }
 
-      // Dawson students: claim, progress, solve, unclaim, and team notes.
+      // Dawson students: claim, progress, solve, unclaim. Team notes are NOT
+      // here any more — they live in the private subcollection below, because
+      // anything on this document is world-readable once approved.
       // .get('status','') (not plain access) so a request that deletes the
       // status field is denied rather than erroring.
       function isStudentWorkflow() {
         return onlyChanged(['status', 'claimedByTeam', 'claimedByUser', 'claimedAt',
-                            'solvedAt', 'internalNotes'])
+                            'solvedAt'])
           && request.resource.data.get('status', '') in ['new', 'claimed', 'inprogress', 'solved'];
       }
 
       allow update: if isSuperUser()
         || (isDawson() && isApprovedNow() && isStudentWorkflow())
         || (isApprovedNow() && (isUpvote() || isCommentAppend()));
+
+      allow delete: if isSuperUser();
+    }
+
+    // ── Private detail ────────────────────────────────────────────────────
+    // Firestore has no field-level read rules: every field of an approved
+    // problem is world-readable, because the public gallery must be able to
+    // read the document. So the two fields that must NOT be public — the
+    // submitter's contact and the team's internal notes — live in their own
+    // document here, gated on isDawson().
+    //
+    // One doc per problem, always id 'detail'.
+    match /problems/{problemId}/private/{detailId} {
+      // The parent problem as it exists BEFORE this write. Used to stop a
+      // passer-by planting a contact on a public problem: approved problem
+      // ids are visible to anyone browsing the gallery.
+      function parentIsUnapproved() {
+        return get(/databases/$(database)/documents/problems/$(problemId))
+                 .data.get('approved', false) == false;
+      }
+
+      allow read: if isDawson();
+
+      // Three ways this document is born:
+      //   · the anonymous submit wizard, writing only the contact, and only
+      //     onto the unapproved problem it has just created;
+      //   · a Dawson student adding the first team note;
+      //   · a super user.
+      // Create only — an existing detail can never be overwritten this way,
+      // so a contact cannot be replaced by a stranger.
+      allow create: if detailId == 'detail' && (
+           isSuperUser()
+        || (isDawson() && request.resource.data.keys().hasOnly(['internalNotes']))
+        || (parentIsUnapproved()
+            && request.resource.data.keys().hasOnly(['submitterContact'])
+            && request.resource.data.submitterContact is string
+            && request.resource.data.submitterContact.size() <= 200)
+      );
+
+      // Students maintain notes and nothing else; the contact is the
+      // submitter's and only a teacher may correct it.
+      allow update: if isSuperUser() || (isDawson() && onlyChanged(['internalNotes']));
 
       allow delete: if isSuperUser();
     }

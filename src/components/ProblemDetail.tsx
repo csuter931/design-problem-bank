@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase'
 import { hasVoted, recordVote, removeVote } from '@/lib/votes'
 import { STATUS_LABELS, STATUS_COLORS, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { isApproved, isRejected } from '@/lib/moderation'
+import { usePrivateDetail, appendNote } from '@/lib/privateDetail'
 
 export interface Problem {
   id: string
@@ -16,7 +17,9 @@ export interface Problem {
   disciplines?: string[]
   submitterName?: string
   submitterRole?: string
-  submitterContact?: string
+  // submitterContact and internalNotes deliberately absent: they are NOT on
+  // this document any more. Every field here is world-readable once the
+  // problem is approved. See lib/privateDetail.ts.
   claimedByTeam?: string
   upvotes?: number
   comments?: unknown[]
@@ -29,7 +32,6 @@ export interface Problem {
   workaround?: string
   priorAttempts?: string
   constraints?: string
-  internalNotes?: Array<{ author: string; text: string; createdAt: number }>
   claimedByUser?: string
   claimedAt?: number
   solvedAt?: number
@@ -84,7 +86,11 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
   const comments = ((problem.comments || []) as unknown[]).filter((c): c is Comment =>
     typeof c === 'object' && c !== null && 'text' in c
   )
-  const notes = problem.internalNotes ?? []
+  // Contact + notes come from problems/{id}/private/detail, not from the
+  // problem prop — they are not on the public document. Only subscribed for
+  // a signed-in Dawson account; the gallery passes no user and sees null.
+  const privateDetail = usePrivateDetail(problem.id, !!user)
+  const notes = privateDetail?.internalNotes ?? []
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -152,7 +158,7 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
     try {
       // arrayUnion appends atomically — a full-array replace would silently drop
       // a note written by a teammate between this modal opening and saving.
-      await updateDoc(doc(db, 'problems', problem.id), { internalNotes: arrayUnion(newNote) })
+      await appendNote(problem.id, newNote)
       setNoteText('')
     } catch {
       setNoteError('Failed to save note. Please try again.')
@@ -269,8 +275,8 @@ export function ProblemDetail({ problem, onClose, isSuperUser, currentTeam, user
                     <p className="font-semibold">
                       {rejected ? '🚫 Rejected — hidden from the public gallery' : '⏳ Pending review — not yet visible in the public gallery'}
                     </p>
-                    {problem.submitterContact && (
-                      <p className="mt-1 text-white/70">Contact: {problem.submitterContact}</p>
+                    {privateDetail?.submitterContact && (
+                      <p className="mt-1 text-white/70">Contact: {privateDetail.submitterContact}</p>
                     )}
                     <div className="flex flex-wrap gap-2 mt-2">
                       <button

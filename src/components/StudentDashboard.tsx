@@ -13,6 +13,7 @@ import { DawsonLogo } from '@/components/DawsonLogo'
 import { AnimatePresence } from 'framer-motion'
 import { STATUS_LABELS, STATUS_COLORS, STATUS_DOT, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { partitionByReview } from '@/lib/moderation'
+import { usePrivateDetail, privateDetailRef } from '@/lib/privateDetail'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
@@ -298,8 +299,23 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   // Backend-free backup. The REST backup script is locked out by the rules,
   // so this is now the way to dump the collection. Same shape as
   // scripts/backup-problems.mjs (`__id` + fields) so restore-problems.mjs can read it.
-  function exportProblems() {
-    const rows = problems.map(({ id, ...rest }) => ({ __id: id, ...rest }))
+  //
+  // The submitter contact and team notes are NOT on the problem document any
+  // more, so each one is fetched from problems/{id}/private/detail and emitted
+  // under `__private`. Without this the backup would silently lose exactly the
+  // data that is hardest to recreate. One read per problem — only a teacher
+  // ever runs this, and only occasionally.
+  async function exportProblems() {
+    const rows = await Promise.all(problems.map(async ({ id, ...rest }) => {
+      let priv: Record<string, unknown> | null = null
+      try {
+        const snap = await getDoc(privateDetailRef(id))
+        if (snap.exists()) priv = snap.data()
+      } catch (e) {
+        console.error('failed to read private detail for', id, e)
+      }
+      return { __id: id, ...rest, ...(priv ? { __private: priv } : {}) }
+    }))
     const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -879,7 +895,12 @@ function EmailModal({ problem, type, user, team, onClose }: {
   const teamName = team?.name || 'Our Team'
   const studentName = user?.displayName || 'A student'
   const contactEmail = user?.email || 'student@school.edu'
-  const contact = problem.submitterContact || ''
+  // The submitter's contact is not on the problem document — it lives in
+  // problems/{id}/private/detail, readable only by a signed-in Dawson
+  // account. This modal is only reachable when signed in.
+  const privateDetail = usePrivateDetail(problem.id, !!user)
+  const contact = privateDetail?.submitterContact || ''
+  const contactLoading = privateDetail === null
 
   const templates = {
     intro: {
@@ -982,7 +1003,7 @@ ${contactEmail}`,
         <div className="overflow-y-auto overscroll-y-contain flex-1 px-6 py-5 flex flex-col gap-4">
           <div>
             <label className={labelCls}>To</label>
-            <input value={contact} readOnly className={`${inputCls} opacity-60 cursor-default`} />
+            <input value={contactLoading ? 'Loading…' : contact || 'No contact on file'} readOnly className={`${inputCls} opacity-60 cursor-default`} />
           </div>
           <div>
             <label className={labelCls}>Subject</label>
