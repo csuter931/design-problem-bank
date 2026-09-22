@@ -11,7 +11,7 @@ A web app for Dawson School that lets teachers manage a bank of design problems,
 ## Tech stack
 - **React 19 + TypeScript + Vite** multi-page app (`src/`), styled with **Tailwind CSS 3**. Two entries, listed in `build.rolldownOptions.input` in `vite.config.ts` (both must stay listed — dropping `main` silently drops the gallery):
   - `index.html` → `src/main.tsx` → the public gallery at `/design-problem-bank/`
-  - `dashboard/index.html` → `src/dashboard.tsx` → the Student Dashboard at **`/design-problem-bank/dashboard/`** (noindex; the URL is handed directly to students). No router library — the web server routes. Back / sign-out navigate to `import.meta.env.BASE_URL`
+  - `dashboard/index.html` → `src/dashboard.tsx` → the Student Dashboard at **`/design-problem-bank/dashboard/`** (noindex; the URL is handed directly to students). No router library — the web server routes. the header's top-right **Problem Bank** button and sign-out both navigate to `import.meta.env.BASE_URL` (both call `onBack`). That button renders outside the `user` guard — it is the only route back, so the signed-out sign-in screen needs it too
 - **framer-motion** for animations
 - Tests: `node:test` with TypeScript type stripping (`src/**/*.test.ts`); Firestore rules tests in `tests/rules/` run against the emulator (`@firebase/rules-unit-testing`)
 
