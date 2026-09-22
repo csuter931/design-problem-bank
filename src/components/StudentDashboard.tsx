@@ -346,21 +346,31 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-10 bg-dawson-navy-900/90 backdrop-blur border-b border-white/[0.07] px-6 py-4">
-        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-y-3">
+        {/* Wider than the max-w-4xl content column below on purpose: this is
+            the same width as the gallery hero's nav row, and the super-user
+            bar (Export / Manage Teams / team / email / sign out) needs about
+            990px next to the lockup. At max-w-4xl it wrapped to a second row
+            and made the sticky header 131px tall. */}
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-y-3">
           <div className="flex items-center gap-3 sm:gap-4">
             <button onClick={onBack} className="text-white/65 hover:text-white text-sm whitespace-nowrap transition-colors">
               ← Back
             </button>
-            {/* Same co-brand lockup as the gallery hero, one step down: mark,
-                hairline, name. Nothing smaller than h-12 — see DawsonLogo.
-                The name stays on one line at every width; the lockup reads as
+            {/* Same co-brand lockup as the gallery hero — mark, hairline,
+                app name — with the page label under it. The app name is the
+                constant across both pages and "Student Dashboard" is the
+                qualifier, not the other way round. Nothing smaller than h-12
+                — see DawsonLogo. Both lines stay nowrap; the lockup reads as
                 one object, so letting it wrap breaks it. */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <DawsonLogo imgClass="h-12" />
-              <div className="h-8 w-px bg-white/25" aria-hidden="true" />
-              <h1 className="font-bold text-sm sm:text-lg tracking-tight text-white leading-none font-display whitespace-nowrap">
-                Student Dashboard
-              </h1>
+            <div className="flex items-center gap-2.5 sm:gap-4">
+              <DawsonLogo imgClass="h-12 sm:h-14" />
+              <div className="h-9 sm:h-10 w-px bg-white/25" aria-hidden="true" />
+              <div className="whitespace-nowrap">
+                <h1 className="font-bold text-[15px] sm:text-xl tracking-tight text-white leading-none font-display">
+                  Design Problem Bank
+                </h1>
+                <p className="text-[11px] sm:text-xs text-white/60 mt-1">Student Dashboard</p>
+              </div>
             </div>
           </div>
           {user && (
@@ -387,7 +397,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
                   👥 {team.name}
                 </span>
               )}
-              <span className="text-xs text-white/65 hidden sm:block">{user.email}</span>
+              <span className="text-xs text-white/65 hidden sm:block max-w-[180px] truncate" title={user.email ?? undefined}>{user.email}</span>
               <button onClick={handleSignOut} className="text-xs text-white/60 hover:text-white transition-colors">
                 Sign out
               </button>
