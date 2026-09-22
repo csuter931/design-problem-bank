@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import {
   collection, query, where, orderBy, onSnapshot,
@@ -14,12 +14,13 @@ import { AnimatePresence } from 'framer-motion'
 import { STATUS_LABELS, STATUS_COLORS, STATUS_DOT, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { partitionByReview } from '@/lib/moderation'
 import { usePrivateDetail, privateDetailRef, deleteProblemWithPrivate } from '@/lib/privateDetail'
+import { initialTab, type DashboardTab } from '@/lib/dashboardTabs'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
 
 // 'pending' is the super-user review queue; it is only offered when isSuperUser.
-type Tab = 'available' | 'mine' | 'solved' | 'all' | 'pending'
+type Tab = DashboardTab
 type AuthView = 'loading' | 'signin' | 'dashboard'
 
 const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-primary focus:bg-white/[0.09] transition-colors'
@@ -110,6 +111,20 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!isSuperUser && tab === 'pending') setTab('available')
   }, [isSuperUser, tab])
+
+  // Honour ?tab= from the notification email. isSuperUser resolves
+  // asynchronously and the effect above forces 'pending' back to 'available'
+  // until it does, so this waits for the flag rather than running on mount.
+  // The ref makes it fire once — otherwise a teacher who clicked away would be
+  // dragged back to Pending on the next render.
+  const deepLinkApplied = useRef(false)
+  useEffect(() => {
+    if (deepLinkApplied.current) return
+    const requested = initialTab(window.location.search, isSuperUser)
+    if (requested === 'available') return
+    setTab(requested)
+    deepLinkApplied.current = true
+  }, [isSuperUser])
 
   async function loadExistingTeams() {
     const teamsSnap = await getDocs(collection(db, 'teams'))
