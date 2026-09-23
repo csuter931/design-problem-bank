@@ -1,11 +1,11 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 ## Phase 1 — Rules hardening + moderation: DEPLOYED 2026-09-03
 Index, client (build `50b3221`), and rules are all live. The `problems` collection was already empty, so the backfill was a no-op. Verified in production: unauthenticated list / teams / config / unfiltered query / self-approving create all return 403; the approved-only gallery query returns 200; a wizard submission succeeds and stays hidden. Remaining checks need a signed-in human:
 - [x] Teacher path verified live 2026-09-03: a new submission was hidden from the gallery, appeared in the **Pending** tab (badge showed 2 — the teacher's own test plus the deploy check), Approve made both public, Delete removed both.
-- [ ] Sign in once with a `@dawsonstudents.org` account and claim an approved problem — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production.
+- [ ] Sign in once with a `@dawsonstudents.org` account and claim an approved problem — `isDawson()` now also requires `email_verified`, which Google-provider tokens always carry, but confirm both domains in production. **More important after Phase 4:** every check so far has been as a super user, who passes `isSuperUser()` and so never exercises the plain-Dawson branch of the new `private/detail` rules. A student reading the contact and writing a team note is a genuinely untested path in production.
 - [ ] Exercise Manage Teams delete and Edit save once as a super user.
 - [ ] Remove this section once verified.
 
@@ -24,15 +24,29 @@ Index, client (build `50b3221`), and rules are all live. The `problems` collecti
 ## Phase 3 — Dawson branding: DEPLOYED 2026-09-03 (build `1ccf854`)
 Palette, type, surfaces, status colours, logo, favicon, and titles are on-brand (see "Branding" in CLAUDE.md); verified live at both URLs with no console errors. Kept the single dark theme on Royal Blue navy — a light Alabaster theme would mean touching ~390 white-on-dark utilities and is a separate decision.
 - [x] Logo supplied — the reversed-colour (white) PNG is in both headers directly on the navy, per the manual's dark-background rule (2026-09-03). Full-colour version and EPS parked in gitignored `brand/`.
-- [ ] Visual review on the live site at both URLs after deploy; the headline serif (Crimson Pro) is a taste call — if it reads too formal, `font-display` is a one-line swap to Nunito in `tailwind.config.js`.
+- [x] Visual review done live at both URLs 2026-09-22/23 (build `74064e6`). Crimson Pro was kept — it reads right, so the Nunito swap is off the table unless someone raises it again. The review did surface two real problems, both fixed in the pass below: the logo was too small for the "SCHOOL" line to resolve, and Dawson Blue text on navy was unreadable.
+
+## Phase 4 — Header pass + contact privacy: DEPLOYED 2026-09-22/23 (build `74064e6`)
+Six commits, `3b59f92`..`74064e6`. Client via Pages; the rules in `a680d00` were deployed separately with `firebase deploy --only firestore:rules` (credentials had expired — `firebase login --reauth` first).
+- [x] Header/logo: logo up to `h-14 sm:h-16` (gallery) and `h-12 sm:h-14` (dashboard) — below 48px the stacked mark's "SCHOOL" line stops resolving, now enforced by a floor in `DawsonLogo.tsx`. Redundant tagline dropped, both headers rebuilt as mark → hairline → app name.
+- [x] `← Back` replaced by a **Problem Bank** button in the dashboard header's top right. It renders outside the `user` guard — it is the only route back, so the signed-out sign-in screen needs it too.
+- [x] Submitter contact + team notes moved to `problems/{id}/private/detail` (see Security below).
+- [x] Contact now shows for **approved** problems and to the **claiming team**, not only to super users on pending ones. Sits beside Team Notes under the existing `canSeeNotes` gate; loading and empty states are explicit so "none on file" can't be mistaken for a failed load.
+- [x] Contrast: `text-primary` on navy was ~1.5:1 in four places (team pill, selected tag chips, wizard current-step marker). Fixed to 6.3–10.8:1. Dawson Blue is a background, never text on navy — rule now stated in CLAUDE.md.
+- [x] Verified live as a super user 2026-09-23: claim, team note added and persisted, submitter contact renders, and the full super-user header row fits on one line.
+- [x] **Toolchain**: installed Microsoft OpenJDK 21 (user PATH) and ran `npm install` in the worktree — `@firebase/rules-unit-testing` was declared but never installed, so the rules suite had never actually run. It runs now (61 tests).
+- [ ] The main checkout's `node_modules` is likely stale for the same reason — run `npm install` there before trusting `npm run test:rules` from the repo root.
 
 ## Security — still open after Phase 1
 - [x] **Team notes + submitter contact are no longer on the problem document** *(fixed 2026-09-22)*. They live in `problems/{id}/private/detail`, gated on `isDawson()` — see `src/lib/privateDetail.ts` and the "Private detail" block in `firestore.rules`. Done while the bank was empty, so no migration and no self-expiring rules clause were needed. Verified against the emulator: an anonymous read of the private doc returns 403, while the problem document still reads publicly; a real wizard submission put the contact in the subcollection and left the problem doc without it. 11 new rules tests (61 total, all passing). Export JSON now carries each problem's `__private` so backups do not silently lose contacts, and `restore-problems.mjs` writes it back.
+- [ ] **Deleting a problem orphans its `private/detail`, so the submitter's contact outlives it** *(found 2026-09-23, introduced by Phase 4)*. `StudentDashboard.tsx:647` does `deleteDoc(doc(db, 'problems', id))`, and Firestore never cascades to subcollections — neither does `firestore:delete` on a single document. The problem vanishes from the UI while the contact stays in the database forever, invisible and unreachable through the app. Same class of issue as the one Phase 4 set out to fix. Fix: delete `privateDetailRef(id)` before the problem doc (the rules already allow super-user delete there), and tolerate a missing private doc. Then sweep for already-orphaned docs — a `private` collection-group query would find them, but the current rule is a specific path and does not enable collection-group reads, so this needs either a temporary rule or the console.
 - [ ] **Team ownership is not enforced** — any Dawson student can change status on any approved problem, not just their own team's. Needs `claimedByTeam` to be checked against the caller's `teams/{uid}` doc in the rules.
 - [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
 - [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
 
 ## Before User Launch
+- [ ] **Delete the `test` problem from production** — it is approved and public, so the gallery currently reads "1 Problems". Remove it (super-user Delete in the detail modal) so the bank opens empty when students arrive. See the orphaned-`private/detail` bug below: its contact will outlive it either way until that is fixed.
+- [ ] **Seed two or three real problems before launch** — an empty gallery is a weak first impression, and a visibly fake placeholder invites students to treat the whole thing as a demo. Better written by a teacher than generated.
 - [x] **Restrict sign-in to Dawson domains** — post-sign-in domain check in StudentDashboard.tsx; allows @dawsonschool.org and @dawsonstudents.org, signs out and shows error for all others
 - [x] **End-to-end submission wizard check** — all fields, dropdowns, photo upload, validation, and gallery appearance verified
 - [x] **Clean up branches** — deleted stale `dev` and `react-app` remote branches
