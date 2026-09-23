@@ -1,7 +1,9 @@
 # Submission notifier
 
 Emails every super user within ~5 minutes when a problem is submitted, so the
-Pending queue never sits unwatched. Design:
+Pending queue never sits unwatched. All super users are addressed on one
+shared `To:` line by design — the list is a handful of teachers, so seeing
+who else was notified is useful, not a leak. Design:
 [docs/superpowers/specs/2026-09-22-submission-notifications-design.md](../docs/superpowers/specs/2026-09-22-submission-notifications-design.md).
 
 It is a Google Apps Script project owned by a teacher's Dawson account. Google
@@ -100,4 +102,5 @@ has edited it in the browser, `cd notifier && npx clasp pull` before pushing.
 | `403` in the execution log | The GCP project is not attached, or the scopes were not granted. Redo steps 3 and 5. |
 | Emails stopped and a "Summary of failures" arrived | Read the execution log; Apps Script disables a trigger after repeated failures. |
 | No Monday heartbeat | The clearest signal the notifier has stopped. Start at the Triggers page. |
-| Everything pending re-emailed at once | The stored id set was cleared. Harmless; it settles after one cycle. |
+| Nothing emailed right after the stored id set is cleared or deleted | An absent property reads back as "never run," so the notifier quietly re-seeds instead of emailing: nothing goes out this cycle, and every problem pending at that moment is recorded as already-notified. It will never be emailed — only problems submitted after the reset are. |
+| Everything pending re-emailed at once | The stored id set holds valid JSON that isn't an array (e.g. `{}`) — a different corruption than being cleared. Every pending problem reads as new. Harmless; it settles after one cycle. |
