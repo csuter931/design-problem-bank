@@ -56,6 +56,7 @@ at `notifier/README.md`.
       approach. If it does, Appendix A of the spec is the Cloudflare fallback
 - [ ] End-to-end: submit through the live wizard, confirm the email arrives
       within five minutes and its link opens the Pending tab
+- [ ] Confirm a non-super-user following the forwarded `?tab=pending` link lands on Available
 - [ ] Confirm the first Monday heartbeat arrives
 - [ ] Add a second teacher to `config/superusers` and confirm they are emailed too
 
