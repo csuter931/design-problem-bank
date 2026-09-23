@@ -45,7 +45,7 @@ Six commits, `3b59f92`..`74064e6`. Client via Pages; the rules in `a680d00` were
 - [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
 - [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
 
-## Phase 4 — Submission notifications: BUILT, not yet deployed
+## Phase 5 — Submission notifications: BUILT, not yet deployed
 Apps Script notifier in `notifier/`; spec at
 `docs/superpowers/specs/2026-09-22-submission-notifications-design.md`, runbook
 at `notifier/README.md`.

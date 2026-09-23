@@ -40,6 +40,12 @@ test('the pending tail is singular for one', () => {
 })
 
 test('the submitter contact is never included', () => {
+  // submitterContact no longer exists on the public problem document — it
+  // moved to problems/{id}/private/detail (src/lib/privateDetail.ts), which
+  // this notifier never reads. The cast below fabricates a field that a real
+  // document can no longer carry, so this guards the toPending allowlist
+  // against a future regression rather than reflecting current production
+  // data.
   const withContact = { ...one, submitterContact: 'jrivera@dawsonstudents.org' } as NotifiableProblem
   const { text, html } = buildDigest([withContact], 1, DASHBOARD)
   assert.ok(!text.includes('jrivera@dawsonstudents.org'))

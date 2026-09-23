@@ -14,6 +14,21 @@ Status: approved, ready for planning
 > suite, not by the OAuth scope. The sections below are corrected in place —
 > nothing past this note still claims the old, unachievable guarantee.
 
+> **Post-rebase reconciliation (2026-09-23).** "Email content" below argued
+> that the submitter's contact address must be deliberately left out of the
+> email because it is PII. While this branch was in flight, `main` merged
+> commit `a680d00`, which moved `submitterContact` (and `internalNotes`) off
+> the `problems/{id}` document entirely, into a `problems/{id}/private/detail`
+> subcollection readable only by a signed-in Dawson account (see
+> `src/lib/privateDetail.ts`). This notifier's `runQuery` reads only
+> `problems/{id}`, so the contact is no longer something it chooses to omit —
+> it is something it cannot see. "Email content" is corrected in place to
+> say so. This does not retire the `toPending` allowlist in
+> `notifier/src/main.ts`: that allowlist is what stops some other field —
+> present today or added later — from reaching an email body, and is still
+> the reason a reader can trust the email builder without re-checking it
+> against the current document shape.
+
 ## Problem
 
 A submitted problem is born `approved: false` and nothing happens next. The only
@@ -241,8 +256,14 @@ source of truth is `notifier/src`.
 ## Email content
 
 Enough to triage from a phone, then one tap to act. The submitter's contact
-address is **deliberately omitted** — it is PII, it is already in the app, and
-email inboxes retain it indefinitely.
+address never appears — it lives in `problems/{id}/private/detail`, not on
+the `problems/{id}` document this notifier queries, so there is nothing to
+omit at the point the email is built (see the reconciliation note at the top
+of this document). It would still be wrong to email regardless: it's PII,
+it's already in the app, and inboxes retain it indefinitely — which is why
+`notifier/src/main.ts`'s `toPending` allowlist stays in place as defence in
+depth, guarding against some other field, present today or added later,
+reaching an email body.
 
 ```
 From:    Dawson Problem Bank <csupiro@dawsonschool.org>

@@ -1787,7 +1787,7 @@ push does NOT deploy it**, same as `firestore.rules`. Setup runbook:
 Add this section immediately after the `## Security — still open after Phase 1` section:
 
 ```markdown
-## Phase 4 — Submission notifications: BUILT, not yet deployed
+## Phase 5 — Submission notifications: BUILT, not yet deployed
 Apps Script notifier in `notifier/`; spec at
 `docs/superpowers/specs/2026-09-22-submission-notifications-design.md`, runbook
 at `notifier/README.md`.

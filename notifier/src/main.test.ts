@@ -179,6 +179,12 @@ test('categories round-trip through the Firestore array encoding into the digest
 })
 
 test('submitterContact never reaches the sent email', () => {
+  // submitterContact no longer exists on the public problem document — it
+  // moved to problems/{id}/private/detail (src/lib/privateDetail.ts), which
+  // this notifier never reads. This fixture fabricates a field a real
+  // Firestore doc can no longer carry, so it guards the toPending allowlist
+  // against a future regression rather than reflecting current production
+  // data.
   const h = harness([{
     id: 'a',
     title: 'One',
