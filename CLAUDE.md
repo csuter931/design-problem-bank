@@ -132,6 +132,33 @@ npm run problems:restore -- <export>.json [docId ...]
 Restores preserve the original document ids. `backups/` is gitignored because the dumps contain
 submitter contact emails — do not commit them.
 
+## Submission notifications (`notifier/`)
+A Google Apps Script project that emails every super user within ~5 minutes of a
+new submission, plus a Monday heartbeat. Source lives in `notifier/src`, bundled
+by `npm run notifier:build` and deployed with `npm run notifier:push` — **git
+push does NOT deploy it**, same as `firestore.rules`. Setup runbook:
+`notifier/README.md`.
+
+- **It must never write to Firestore.** Its only Firestore scope is
+  `cloud-platform.read-only` and there is no stored credential —
+  `ScriptApp.getOAuthToken()` uses the owning teacher's identity. Adding a write
+  means widening the scope, which is a deliberate decision, not a passing change
+- `notifier/src/env.ts` is the **only** file permitted to name an Apps Script
+  global. Everything else takes `NotifierEnv` and is unit-tested by `npm test`
+- It tracks already-emailed document **ids** in `PropertiesService`, not a
+  timestamp — `createdAt` comes from the submitter's browser clock, so a
+  watermark would silently skip a submission from a device running slow
+- The query is `approved == false` with no `orderBy`: that uses the automatic
+  single-field index (no `firestore.indexes.json` change) and keeps 288
+  polls/day inside the free read quota. An unfiltered poll would exceed it
+  once the bank passed ~170 problems
+- **Never send from `@dawsonschool.org` via a third party.** The domain
+  publishes `DMARC p=quarantine; pct=100` behind an SPF `-all`; mail would be
+  quarantined and the school's IT admin would get reports naming the sender.
+  Apps Script is safe because Google itself is sending
+- The script is owned by one teacher's account. If that account is suspended,
+  notifications stop and the missing Monday heartbeat is the signal
+
 ## Super User Role
 - Super users (teachers) are defined by email in Firestore at `config/superusers { emails: [] }`
 - The `isSuperUser` flag is set in `StudentDashboard.tsx` on auth-state change by reading that doc

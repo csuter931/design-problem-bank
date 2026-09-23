@@ -45,6 +45,20 @@ Six commits, `3b59f92`..`74064e6`. Client via Pages; the rules in `a680d00` were
 - [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
 - [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
 
+## Phase 4 — Submission notifications: BUILT, not yet deployed
+Apps Script notifier in `notifier/`; spec at
+`docs/superpowers/specs/2026-09-22-submission-notifications-design.md`, runbook
+at `notifier/README.md`.
+- [ ] Work through `notifier/README.md` "First-time setup" (creates the script,
+      attaches the GCP project, grants scopes, creates the two triggers)
+- [ ] Confirm Dawson's Workspace admin does not block Apps Script or require
+      OAuth app allowlisting — this is the one accepted risk that could veto the
+      approach. If it does, Appendix A of the spec is the Cloudflare fallback
+- [ ] End-to-end: submit through the live wizard, confirm the email arrives
+      within five minutes and its link opens the Pending tab
+- [ ] Confirm the first Monday heartbeat arrives
+- [ ] Add a second teacher to `config/superusers` and confirm they are emailed too
+
 ## Before User Launch
 - [ ] **Delete the `test` problem from production** — it is approved and public, so the gallery currently reads "1 Problems". Remove it (super-user Delete in the detail modal) so the bank opens empty when students arrive. See the orphaned-`private/detail` bug below: its contact will outlive it either way until that is fixed.
 - [ ] **Seed two or three real problems before launch** — an empty gallery is a weak first impression, and a visibly fake placeholder invites students to treat the whole thing as a demo. Better written by a teacher than generated.
