@@ -30,34 +30,56 @@ notifier.
 
 ## First-time setup
 
-1. **Create the project.** <https://script.google.com> → New project. Rename it
-   "Problem Bank notifier". Project Settings → copy the **Script ID**.
-2. **Create `.clasp.json`.** Copy `.clasp.json.example` to `notifier/.clasp.json`
-   and paste the Script ID in. It is gitignored — it is per-install, not shared.
-3. **Attach the Cloud project.** Project Settings → Google Cloud Platform (GCP)
-   Project → Change project → enter the project **number** for
-   `dawson-problem-bank-24a9c` (Firebase console → Project settings → General).
-   The OAuth consent screen is already configured, because Google Sign-in works
-   on the live site.
-4. **Log in and push.**
+1. **Create the project.** Sign in to <https://script.google.com> as the
+   Dawson account that should own the notifier — whichever account is active
+   in the browser is the one that authenticates every send it makes later.
+   **New project** → rename it "Problem Bank notifier" (click the title, top
+   left) → **Project Settings** (⚙ in the left sidebar) → copy the
+   **Script ID**.
+2. **Create `.clasp.json`.** From the repo root:
+   ```bash
+   cp notifier/.clasp.json.example notifier/.clasp.json
+   ```
+   Paste the Script ID in as the `scriptId` value. It is gitignored — it is
+   per-install, not shared.
+3. **Attach the Cloud project.** Still in Project Settings: Google Cloud
+   Platform (GCP) Project → Change project → paste the project **number**
+   (not the id) for `dawson-problem-bank-24a9c` — find it at
+   <https://console.firebase.google.com> → ⚙ Project settings → General →
+   "Project number" — then confirm. The OAuth consent screen is already
+   configured, because Google Sign-in works on the live site.
+4. **Log in and push.** From the repo root:
    ```bash
    npx clasp login
    npm run notifier:push
    ```
-5. **Authorise.** In the Apps Script editor pick `pollForNewSubmissions` and
-   press Run. Grant the scopes when prompted. This first run **seeds silently**:
-   it records whatever is already pending and sends nothing. That is correct.
+   `clasp login` opens a browser tab — sign in as the same account as step 1.
+5. **Authorise.** Back in the Apps Script editor, use the function dropdown
+   next to the **Run** button (top toolbar) to select `pollForNewSubmissions`,
+   then click **Run**. A "Google hasn't verified this app" screen is expected —
+   it only means the script is private rather than published — click
+   **Advanced** → **Go to Problem Bank notifier (unsafe)** → **Allow** to grant
+   the scopes. The execution log at the bottom should then show
+   `Execution completed`. This first run **seeds silently**: it records
+   whatever is already pending and sends nothing. That is correct.
 6. **Create the triggers.** Editor → Triggers (clock icon) → Add trigger:
    - `pollForNewSubmissions` — Time-driven → Minutes timer → Every 5 minutes
    - `weeklyHeartbeat` — Time-driven → Week timer → Monday → 7am to 8am
 
    The manifest sets `America/Denver`, so that is 7am Mountain year-round.
-7. **End-to-end test.** Submit a problem through the live wizard. Within five
-   minutes an email should arrive from your own address. Open the link and
-   confirm it lands on the Pending tab.
-8. **If it went to spam,** add a Gmail filter on the subject prefix and tick
-   "Never send it to Spam". Expected to be unnecessary — the mail is genuinely
-   from you — but check once.
+7. **End-to-end test.** Submit a problem through the live wizard at
+   <https://csuter931.github.io/design-problem-bank/>. Within five minutes an
+   email should arrive at your own address. Before opening its link, sign in
+   on the dashboard with an account already listed in `config/superusers` —
+   the link lands on the Pending tab only for a super user; any other account
+   lands on Available instead, which can look like the link is broken when it
+   is really just an account that isn't a super user yet.
+8. **If it went to spam,** add a Gmail filter matching the sender name
+   (`Dawson Problem Bank`) and tick "Never send it to Spam". Filter on the
+   sender, not the subject — the subject varies by email (`New problem
+   submitted — …`, `N new problems submitted`, `Problem Bank — …`), so there
+   is no single prefix to match. Expected to be unnecessary — the mail is
+   genuinely from you — but check once.
 
 ## Making changes
 
