@@ -13,8 +13,15 @@
 /**
  * PropertiesService caps one value at 9 KB. A 20-character document id costs
  * about 23 bytes inside a JSON array, so ~390 ids fit. 300 leaves headroom.
- * Overflowing re-notifies the oldest entries rather than dropping new ones —
- * noisy, not silent, which is the right direction to fail.
+ *
+ * Overflow does not settle. Above 300 pending problems, `nextStoredIds` keeps
+ * only the newest 300, so the oldest ones are never recorded as notified —
+ * every cycle re-detects them as "new" and re-emails them, every five
+ * minutes, for as long as the queue stays over 300. With more than one
+ * recipient that can exhaust MailApp's daily send quota and turn into
+ * silence, which is the opposite of what this feature exists for. There is
+ * no mitigation here beyond keeping the review queue under 300; treat a
+ * queue that size as its own incident.
  */
 export const MAX_STORED_IDS = 300
 

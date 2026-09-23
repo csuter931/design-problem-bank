@@ -3,6 +3,17 @@
 Date: 2026-09-22
 Status: approved, ready for planning
 
+> **Post-review correction (2026-09-23).** This design and its "Credentials"
+> decision below assumed a read-only Firestore OAuth scope existed. It does
+> not: Firestore's REST API accepts exactly two scopes, `datastore` and
+> `cloud-platform` — both write-capable — and rejects
+> `cloud-platform.read-only` with `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`. Found
+> during the feature's final review, before first deploy. The manifest now
+> declares `datastore`; the "notifier never writes" guarantee is enforced by
+> code (`notifier/src/env.ts`, `notifier/src/firestore.ts`) and the test
+> suite, not by the OAuth scope. The sections below are corrected in place —
+> nothing past this note still claims the old, unachievable guarantee.
+
 ## Problem
 
 A submitted problem is born `approved: false` and nothing happens next. The only
@@ -25,7 +36,7 @@ review queue.
 | Recipients | Everyone in `config/superusers.emails` | The list already exists; a second list would drift |
 | Host | **Google Apps Script** | See "How we got here" |
 | Sender | `csupiro@dawsonschool.org`, display name "Dawson Problem Bank" | Google sends it, so it authenticates natively |
-| Credentials | **None stored** | `ScriptApp.getOAuthToken()` with a read-only scope |
+| Credentials | **None stored** | `ScriptApp.getOAuthToken()`, scoped to `datastore` — the narrowest Firestore scope Google offers; there is no read-only one |
 | Bursts | One digest email per poll cycle | A class of 30 submitting together produces one email, not thirty |
 | Failure visibility | Weekly heartbeat email | Makes silence meaningful |
 
@@ -75,9 +86,13 @@ party as an unauthorised sender spoofing the school domain.
 The second finding removed the credential entirely. Apps Script can call the
 Firestore REST API with `ScriptApp.getOAuthToken()` — the owner's own Google
 identity — so there is **no service-account key to store, leak, or rotate**.
-Declaring only the `cloud-platform.read-only` scope makes the script incapable
-of writing to Firestore by construction. That is the same safety property the
-Cloudflare design worked to achieve, reached by not having a key at all.
+The manifest declares the `datastore` scope, the narrowest one Firestore's
+REST API accepts; there is no read-only variant, so the scope alone cannot
+make a write impossible. The safety property is the code instead: no write
+call exists in `notifier/src/firestore.ts`, and the test suite pins that.
+That is weaker than "impossible by construction", but going without a stored
+key at all is still strictly better than the Cloudflare design, which needed
+one.
 
 Accepted in exchange: the script belongs to a person rather than to the school
 (see Risks), and the build is fiddlier than `wrangler deploy`.
@@ -106,10 +121,12 @@ Trigger: Mondays 07:00  →  weeklyHeartbeat()
     └─ pending count → one email either way; does not touch stored state
 ```
 
-The script performs **no Firestore writes**, and its declared OAuth scope makes
-that structurally impossible rather than merely intended. Treat it as an
-invariant: adding a write means widening the scope, which should be a conscious
-decision with its own review.
+The script performs **no Firestore writes**. Firestore's OAuth scopes offer no
+read-only option, so this is enforced by code rather than by the API: the
+`env.ts` seam is the only place a write call could be added, `firestore.ts`
+contains no such call, and the test suite exercises every branch. Treat it as
+an invariant anyway — adding a write would compile and deploy cleanly, so
+catching it is review's job now, not the scope's.
 
 ### Authentication
 
@@ -121,7 +138,9 @@ Because this is the owner's Google identity acting through IAM, Firestore
 security rules are bypassed — the same as any admin access — so pending and
 rejected documents are readable. The `appsscript.json` manifest declares:
 
-- `https://www.googleapis.com/auth/cloud-platform.read-only` — Firestore reads
+- `https://www.googleapis.com/auth/datastore` — Firestore reads (the narrowest
+  scope Firestore's REST API accepts; there is no read-only variant — see the
+  correction note at the top of this document)
 - `https://www.googleapis.com/auth/script.external_request` — `UrlFetchApp`
 - `https://www.googleapis.com/auth/script.send_mail` — `MailApp`
 

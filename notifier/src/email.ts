@@ -143,8 +143,12 @@ export function buildHeartbeat(pendingCount: number, dashboardUrl: string): Buil
   const subject = healthy
     ? 'Problem Bank — nothing pending'
     : `Problem Bank — ${pendingCount} waiting for review`
+  // This heartbeat firing proves the weekly trigger, OAuth, Firestore and
+  // mail all work. It proves nothing about the 5-minute poll trigger — the
+  // component most likely to be auto-disabled after repeated failures — so
+  // the copy claims only what this run actually checked, not general health.
   const intro = healthy
-    ? 'Nothing is waiting for review. The notifier ran and is healthy.'
+    ? 'Nothing is waiting for review. The weekly check ran; Firestore and mail are reachable.'
     : pendingTail(pendingCount)
 
   const text = [intro, '', '  → Open the review queue', `     ${dashboardUrl}`, '', 'This is the weekly check-in. If it stops arriving, the notifier has stopped running.'].join('\n')

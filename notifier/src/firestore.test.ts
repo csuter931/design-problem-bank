@@ -7,11 +7,19 @@ import {
 
 const PROJECT = 'dawson-problem-bank-24a9c'
 
-function fakeFetcher(status: number, body: string, calls: Array<{ url: string; method: string; payload?: string }> = []): HttpFetcher {
+interface Call { url: string; method: string; payload?: string; headers?: Record<string, string> }
+
+function fakeFetcher(status: number, body: string, calls: Call[] = []): HttpFetcher {
   return (url, init) => {
-    calls.push({ url, method: init.method, payload: init.payload })
+    calls.push({ url, method: init.method, payload: init.payload, headers: init.headers })
     return { status, body }
   }
+}
+
+/** Collects log messages instead of stubbing `console`, matching env.test.ts. */
+function collector(): { log: (message: string) => void; messages: string[] } {
+  const messages: string[] = []
+  return { log: (message) => { messages.push(message) }, messages }
 }
 
 test('the query filters on approved == false and does not order', () => {
@@ -111,35 +119,89 @@ test('superuser emails are extracted from the config document', () => {
     name: `projects/${PROJECT}/databases/(default)/documents/config/superusers`,
     fields: { emails: { arrayValue: { values: [{ stringValue: 'a@dawsonschool.org' }, { stringValue: 'b@dawsonschool.org' }] } } },
   })
-  assert.deepEqual(parseSuperuserEmails(body), ['a@dawsonschool.org', 'b@dawsonschool.org'])
+  assert.deepEqual(parseSuperuserEmails(body, collector().log), ['a@dawsonschool.org', 'b@dawsonschool.org'])
 })
 
 test('a config document with no emails field yields an empty list', () => {
-  assert.deepEqual(parseSuperuserEmails(JSON.stringify({ fields: {} })), [])
-  assert.deepEqual(parseSuperuserEmails(JSON.stringify({})), [])
+  assert.deepEqual(parseSuperuserEmails(JSON.stringify({ fields: {} }), collector().log), [])
+  assert.deepEqual(parseSuperuserEmails(JSON.stringify({}), collector().log), [])
 })
 
 test('non-string entries in the emails array are discarded', () => {
   const body = JSON.stringify({
     fields: { emails: { arrayValue: { values: [{ stringValue: 'a@dawsonschool.org' }, { integerValue: '7' }] } } },
   })
-  assert.deepEqual(parseSuperuserEmails(body), ['a@dawsonschool.org'])
+  assert.deepEqual(parseSuperuserEmails(body, collector().log), ['a@dawsonschool.org'])
+})
+
+test('an empty string entry is dropped and logged, valid entries survive', () => {
+  const { log, messages } = collector()
+  const body = JSON.stringify({
+    fields: { emails: { arrayValue: { values: [{ stringValue: 'a@dawsonschool.org' }, { stringValue: '' }] } } },
+  })
+  assert.deepEqual(parseSuperuserEmails(body, log), ['a@dawsonschool.org'])
+  assert.equal(messages.length, 1)
+  assert.match(messages[0], /dropped/i)
+})
+
+test('a whitespace-only entry is dropped and logged, valid entries survive', () => {
+  const { log, messages } = collector()
+  const body = JSON.stringify({
+    fields: { emails: { arrayValue: { values: [{ stringValue: '   ' }, { stringValue: 'a@dawsonschool.org' }] } } },
+  })
+  assert.deepEqual(parseSuperuserEmails(body, log), ['a@dawsonschool.org'])
+  assert.equal(messages.length, 1)
+  assert.match(messages[0], /dropped/i)
+})
+
+test('an entry with no @ is dropped and logged, valid entries survive', () => {
+  const { log, messages } = collector()
+  const body = JSON.stringify({
+    fields: { emails: { arrayValue: { values: [{ stringValue: 'not-an-email' }, { stringValue: 'a@dawsonschool.org' }] } } },
+  })
+  assert.deepEqual(parseSuperuserEmails(body, log), ['a@dawsonschool.org'])
+  assert.equal(messages.length, 1)
+  assert.match(messages[0], /dropped/i)
+})
+
+test('valid entries are trimmed and survive alongside several malformed ones', () => {
+  const { log, messages } = collector()
+  const body = JSON.stringify({
+    fields: {
+      emails: {
+        arrayValue: {
+          values: [
+            { stringValue: '  a@dawsonschool.org  ' },
+            { stringValue: '' },
+            { stringValue: '   ' },
+            { stringValue: 'not-an-email' },
+            { stringValue: 'b@dawsonschool.org' },
+          ],
+        },
+      },
+    },
+  })
+  assert.deepEqual(parseSuperuserEmails(body, log), ['a@dawsonschool.org', 'b@dawsonschool.org'])
+  assert.equal(messages.length, 1)
+  assert.match(messages[0], /dropped 3/i)
 })
 
 test('fetchUnapprovedProblems posts to runQuery with a bearer token', () => {
-  const calls: Array<{ url: string; method: string; payload?: string }> = []
+  const calls: Call[] = []
   fetchUnapprovedProblems(fakeFetcher(200, '[]', calls), PROJECT, 'TOKEN123')
   assert.equal(calls.length, 1)
   assert.equal(calls[0].method, 'post')
   assert.ok(calls[0].url.endsWith(`/projects/${PROJECT}/databases/(default)/documents:runQuery`))
   assert.ok(calls[0].payload?.includes('"approved"'))
+  assert.equal(calls[0].headers?.Authorization, 'Bearer TOKEN123')
 })
 
-test('fetchSuperuserEmails gets the config document', () => {
-  const calls: Array<{ url: string; method: string; payload?: string }> = []
-  fetchSuperuserEmails(fakeFetcher(200, JSON.stringify({ fields: {} }), calls), PROJECT, 'TOKEN123')
+test('fetchSuperuserEmails gets the config document with a bearer token', () => {
+  const calls: Call[] = []
+  fetchSuperuserEmails(fakeFetcher(200, JSON.stringify({ fields: {} }), calls), PROJECT, 'TOKEN123', collector().log)
   assert.equal(calls[0].method, 'get')
   assert.ok(calls[0].url.endsWith('/documents/config/superusers'))
+  assert.equal(calls[0].headers?.Authorization, 'Bearer TOKEN123')
 })
 
 test('a non-200 throws rather than returning silently empty', () => {
@@ -150,7 +212,7 @@ test('a non-200 throws rather than returning silently empty', () => {
     /403/,
   )
   assert.throws(
-    () => fetchSuperuserEmails(fakeFetcher(500, 'boom'), PROJECT, 'T'),
+    () => fetchSuperuserEmails(fakeFetcher(500, 'boom'), PROJECT, 'T', collector().log),
     /500/,
   )
 })

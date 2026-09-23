@@ -1,6 +1,10 @@
-// Firestore REST v1 access for the notifier. Read-only by design — the script's
-// OAuth scope is cloud-platform.read-only, so a write would fail at the API
-// even if one were added here.
+// Firestore REST v1 access for the notifier. This module only ever reads
+// (runQuery, and a GET of config/superusers) — there is no write function
+// here, and that is what keeps the notifier read-only, not the OAuth scope.
+// Firestore's REST API has no read-only scope (only `datastore` and
+// `cloud-platform`, both write-capable), so appsscript.json necessarily
+// grants write access that this file simply never calls. The guarantee is
+// the absence of a write call here plus the test suite, not the API.
 //
 // The HTTP call is injected rather than imported so this module never names
 // UrlFetchApp and can be unit-tested in plain Node. env.ts supplies the real
@@ -94,11 +98,34 @@ export function parseRunQueryResponse(body: string): FirestoreDoc[] {
   return docs
 }
 
-export function parseSuperuserEmails(body: string): string[] {
+/**
+ * `config/superusers` is hand-edited (CLAUDE.md already documents a
+ * capitalisation footgun there), and `MailApp.sendEmail` throws on a single
+ * malformed recipient. Without sanitising here, one empty string or typo'd
+ * entry would throw on every poll — silencing every super user, not just the
+ * bad entry — so a malformed entry is dropped and logged instead of allowed
+ * to take the whole list down with it.
+ */
+export function parseSuperuserEmails(body: string, log: (message: string) => void): string[] {
   const doc = JSON.parse(body) as { fields?: Record<string, FirestoreValue> }
   const emails = decodeFields(doc.fields ?? {}).emails
   if (!Array.isArray(emails)) return []
-  return emails.filter((e): e is string => typeof e === 'string')
+  const strings = emails.filter((e): e is string => typeof e === 'string')
+
+  const valid: string[] = []
+  const dropped: string[] = []
+  for (const raw of strings) {
+    const trimmed = raw.trim()
+    if (trimmed.length > 0 && trimmed.includes('@')) valid.push(trimmed)
+    else dropped.push(JSON.stringify(raw))
+  }
+  if (dropped.length > 0) {
+    log(
+      `Dropped ${dropped.length} malformed config/superusers ` +
+      `${dropped.length === 1 ? 'entry' : 'entries'}: ${dropped.join(', ')}`,
+    )
+  }
+  return valid
 }
 
 export function fetchUnapprovedProblems(
@@ -118,11 +145,12 @@ export function fetchSuperuserEmails(
   fetcher: HttpFetcher,
   projectId: string,
   token: string,
+  log: (message: string) => void,
 ): string[] {
   const url = `${BASE}/${projectId}/databases/(default)/documents/config/superusers`
   const res = fetcher(url, { method: 'get', headers: authHeaders(token) })
   if (res.status !== 200) throw new Error(`Firestore get config/superusers failed: ${res.status} ${res.body}`)
-  return parseSuperuserEmails(res.body)
+  return parseSuperuserEmails(res.body, log)
 }
 
 function authHeaders(token: string): Record<string, string> {

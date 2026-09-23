@@ -20,7 +20,7 @@ export function poll(env: NotifierEnv): void {
     return
   }
 
-  const recipients = fetchSuperuserEmails(env.fetchJson, env.projectId, token)
+  const recipients = fetchSuperuserEmails(env.fetchJson, env.projectId, token, env.log)
   if (recipients.length === 0) {
     // Deliberately no state write — once a super user is configured, the next
     // cycle will still report these as new.
@@ -42,7 +42,7 @@ export function poll(env: NotifierEnv): void {
 export function heartbeat(env: NotifierEnv): void {
   const token = env.getToken()
   const pending = readPending(env, token)
-  const recipients = fetchSuperuserEmails(env.fetchJson, env.projectId, token)
+  const recipients = fetchSuperuserEmails(env.fetchJson, env.projectId, token, env.log)
   if (recipients.length === 0) {
     env.log('No super user emails configured; heartbeat not sent.')
     return

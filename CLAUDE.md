@@ -139,10 +139,14 @@ by `npm run notifier:build` and deployed with `npm run notifier:push` — **git
 push does NOT deploy it**, same as `firestore.rules`. Setup runbook:
 `notifier/README.md`.
 
-- **It must never write to Firestore.** Its only Firestore scope is
-  `cloud-platform.read-only` and there is no stored credential —
-  `ScriptApp.getOAuthToken()` uses the owning teacher's identity. Adding a write
-  means widening the scope, which is a deliberate decision, not a passing change
+- **It must never write to Firestore.** Firestore's REST API has no read-only
+  OAuth scope — only `datastore` and `cloud-platform`, both write-capable — so
+  the manifest declares `datastore` (the narrower one) and the invariant is
+  enforced by code, not by the scope: `env.ts`'s seam, the absence of any
+  write call, and the test suite. There is no stored credential —
+  `ScriptApp.getOAuthToken()` uses the owning teacher's identity. Adding a
+  write would compile and deploy cleanly; catching it is review's job now,
+  not the API's
 - `notifier/src/env.ts` is the **only** file permitted to name an Apps Script
   global. Everything else takes `NotifierEnv` and is unit-tested by `npm test`
 - It tracks already-emailed document **ids** in `PropertiesService`, not a

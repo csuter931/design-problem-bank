@@ -38,6 +38,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Build notifier bundle
+        run: npm run notifier:build
+
       - name: Build
         run: npm run build
 

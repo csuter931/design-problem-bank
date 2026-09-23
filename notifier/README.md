@@ -11,9 +11,15 @@ sends the mail, so it authenticates as that account and lands in the inbox;
 `dawsonschool.org` publishes `DMARC p=quarantine` behind an SPF `-all`, so a
 third-party sender using an `@dawsonschool.org` From line would be quarantined.
 
-**It cannot write to Firestore.** Its only Firestore scope is
-`cloud-platform.read-only`, and there is no stored credential of any kind —
-authentication is `ScriptApp.getOAuthToken()`. Keep it that way.
+**It does not write to Firestore.** That is enforced by code, not by the OAuth
+scope: Firestore's REST API has no read-only scope (only `datastore` and
+`cloud-platform`, both write-capable), so the manifest declares `datastore` —
+the narrower of the two — and simply never calls a write. The guarantee is
+`env.ts`'s seam (the only file allowed to touch `UrlFetchApp`), the absence of
+any write call in `firestore.ts`, and the test suite. There is no stored
+credential of any kind — authentication is `ScriptApp.getOAuthToken()`. Keep
+it that way; a write added here would compile and deploy cleanly, so review is
+now the only thing standing in the way.
 
 ## Layout
 
@@ -27,8 +33,10 @@ authentication is `ScriptApp.getOAuthToken()`. Keep it that way.
 | `src/entry.ts` | esbuild entry; the build footer exposes the trigger globals |
 | `build/` | Generated bundle — gitignored |
 
-Tests run under the repo's `npm test`, so CI blocks a deploy on a broken
-notifier.
+Tests run under the repo's `npm test`. CI also runs `npm run notifier:build`,
+whose post-build check fails loudly if the bundle stops exposing either
+trigger function by name (see `build.mjs`) — so both a broken test and a
+broken bundle block the site deploy, the same as any other failing check.
 
 ## First-time setup
 
@@ -50,13 +58,18 @@ notifier.
    <https://console.firebase.google.com> → ⚙ Project settings → General →
    "Project number" — then confirm. The OAuth consent screen is already
    configured, because Google Sign-in works on the live site.
-4. **Log in and push.** From the repo root:
+4. **Enable the Apps Script API.** At
+   <https://script.google.com/home/usersettings>, signed in as the same
+   account, turn "Google Apps Script API" on. It is off by default, and
+   `clasp push` fails with "User has not enabled the Apps Script API" until
+   this is done — the standard first-run wall; everyone hits it once.
+5. **Log in and push.** From the repo root:
    ```bash
    npx clasp login
    npm run notifier:push
    ```
    `clasp login` opens a browser tab — sign in as the same account as step 1.
-5. **Authorise.** Back in the Apps Script editor, use the function dropdown
+6. **Authorise.** Back in the Apps Script editor, use the function dropdown
    next to the **Run** button (top toolbar) to select `pollForNewSubmissions`,
    then click **Run**. A "Google hasn't verified this app" screen is expected —
    it only means the script is private rather than published — click
@@ -64,19 +77,22 @@ notifier.
    the scopes. The execution log at the bottom should then show
    `Execution completed`. This first run **seeds silently**: it records
    whatever is already pending and sends nothing. That is correct.
-6. **Create the triggers.** Editor → Triggers (clock icon) → Add trigger:
+7. **Create the triggers.** Editor → Triggers (clock icon) → Add trigger:
    - `pollForNewSubmissions` — Time-driven → Minutes timer → Every 5 minutes
    - `weeklyHeartbeat` — Time-driven → Week timer → Monday → 7am to 8am
 
    The manifest sets `America/Denver`, so that is 7am Mountain year-round.
-7. **End-to-end test.** Submit a problem through the live wizard at
+8. **End-to-end test.** The notifier emails the addresses listed in
+   `config/superusers`, not the script owner — confirm your own address is
+   there, all lowercase, before testing, or you can submit a problem and
+   correctly receive nothing. Submit a problem through the live wizard at
    <https://csuter931.github.io/design-problem-bank/>. Within five minutes an
-   email should arrive at your own address. Before opening its link, sign in
+   email should arrive at that address. Before opening its link, sign in
    on the dashboard with an account already listed in `config/superusers` —
    the link lands on the Pending tab only for a super user; any other account
    lands on Available instead, which can look like the link is broken when it
    is really just an account that isn't a super user yet.
-8. **If it went to spam,** add a Gmail filter matching the sender name
+9. **If it went to spam,** add a Gmail filter matching the sender name
    (`Dawson Problem Bank`) and tick "Never send it to Spam". Filter on the
    sender, not the subject — the subject varies by email (`New problem
    submitted — …`, `N new problems submitted`, `Problem Bank — …`), so there
@@ -99,7 +115,8 @@ has edited it in the browser, `cd notifier && npx clasp pull` before pushing.
 | Symptom | Cause |
 |---|---|
 | No emails and no errors | A trigger was deleted or never created. Check the Triggers page. |
-| `403` in the execution log | The GCP project is not attached, or the scopes were not granted. Redo steps 3 and 5. |
+| `403` in the execution log | The GCP project is not attached, or the scopes were not granted. Redo steps 3 and 6. |
+| `ACCESS_TOKEN_SCOPE_INSUFFICIENT` in the execution log | Different from a plain `403` above: the scopes declared in `appsscript.json` do not authorise the Firestore call being made. If you just changed the scopes there, you must re-authorise — an existing authorisation does not pick up new scopes. Run a function manually (step 6) and accept the new permission prompt. |
 | Emails stopped and a "Summary of failures" arrived | Read the execution log; Apps Script disables a trigger after repeated failures. |
 | No Monday heartbeat | The clearest signal the notifier has stopped. Start at the Triggers page. |
 | Nothing emailed right after the stored id set is cleared or deleted | An absent property reads back as "never run," so the notifier quietly re-seeds instead of emailing: nothing goes out this cycle, and every problem pending at that moment is recorded as already-notified. It will never be emailed — only problems submitted after the reset are. |

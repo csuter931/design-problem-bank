@@ -49,6 +49,10 @@ Six commits, `3b59f92`..`74064e6`. Client via Pages; the rules in `a680d00` were
 Apps Script notifier in `notifier/`; spec at
 `docs/superpowers/specs/2026-09-22-submission-notifications-design.md`, runbook
 at `notifier/README.md`.
+- [ ] Confirm a real Firestore read succeeds with the declared `datastore`
+      scope (README step 5: run `pollForNewSubmissions` by hand, check the
+      execution log for `Execution completed`, not
+      `ACCESS_TOKEN_SCOPE_INSUFFICIENT`) — before anything else below
 - [ ] Work through `notifier/README.md` "First-time setup" (creates the script,
       attaches the GCP project, grants scopes, creates the two triggers)
 - [ ] Confirm Dawson's Workspace admin does not block Apps Script or require

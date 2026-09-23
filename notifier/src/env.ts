@@ -4,6 +4,13 @@
 // else takes NotifierEnv as a parameter, which is what keeps the rest of the
 // project unit-testable in plain Node — and what would make a move off Apps
 // Script cost roughly this file and nothing else.
+//
+// It is also the only place a Firestore write could be added — fetchJson is
+// the sole path to UrlFetchApp. The manifest's `datastore` scope would allow
+// one (Firestore has no read-only scope, so this file's write capability is
+// unused, not unavailable); nothing here makes the call. That absence, plus
+// the test suite, is what keeps this notifier read-only — not the OAuth
+// scope.
 
 import type { BuiltEmail } from './email.ts'
 import type { HttpFetcher } from './firestore.ts'
@@ -69,6 +76,7 @@ export function parseStoredIds(raw: string | null, log: (message: string) => voi
 
 export function appsScriptEnv(): NotifierEnv {
   const props = PropertiesService.getScriptProperties()
+  const log = (message: string): void => { console.log(message) }
 
   return {
     projectId: PROJECT_ID,
@@ -88,7 +96,7 @@ export function appsScriptEnv(): NotifierEnv {
     // The owner's own short-lived token. No service-account key exists.
     getToken: () => ScriptApp.getOAuthToken(),
 
-    readStoredIds: () => parseStoredIds(props.getProperty(STORED_IDS_KEY), (m) => { console.log(m) }),
+    readStoredIds: () => parseStoredIds(props.getProperty(STORED_IDS_KEY), log),
 
     writeStoredIds: (ids) => { props.setProperty(STORED_IDS_KEY, JSON.stringify(ids)) },
 
@@ -104,6 +112,6 @@ export function appsScriptEnv(): NotifierEnv {
       })
     },
 
-    log: (message) => { console.log(message) },
+    log,
   }
 }
