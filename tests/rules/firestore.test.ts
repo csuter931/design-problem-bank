@@ -392,6 +392,25 @@ describe('problems/{id}/private/detail', () => {
     await assertSucceeds(as(TEACHER).doc(detail('approved1')).update({ submitterContact: 'fixed@b.c' }))
     await assertSucceeds(as(TEACHER).doc(detail('approved1')).delete())
   })
+  test('deleting a detail that does not exist is allowed — otherwise no contactless problem could be deleted', async () => {
+    // deleteProblemWithPrivate() batches both deletes unconditionally, and
+    // most problems have no private/detail at all. If the rule needed
+    // `resource` to exist, every one of them would become undeletable.
+    await assertSucceeds(as(TEACHER).doc(detail('pending1')).delete())
+  })
+  test('the batched problem+detail delete succeeds as one unit for a super user, and is denied for everyone else', async () => {
+    const both = (db: ReturnType<typeof anon>) => {
+      const b = db.batch()
+      b.delete(db.doc(detail('claimed1')))
+      b.delete(db.doc('problems/claimed1'))
+      return b.commit()
+    }
+    await assertFails(both(as(STUDENT)))
+    await assertFails(both(anon()))
+    await assertSucceeds(both(as(TEACHER)))
+    const left = await as(TEACHER).doc(detail('claimed1')).get()
+    assert.equal(left.exists, false)
+  })
 
   test('the problem document itself can no longer carry either field', async () => {
     await assertFails(anon().collection('problems').add({ ...newProblem, submitterContact: 'a@b.c' }))

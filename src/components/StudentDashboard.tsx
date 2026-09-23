@@ -13,7 +13,7 @@ import { DawsonLogo } from '@/components/DawsonLogo'
 import { AnimatePresence } from 'framer-motion'
 import { STATUS_LABELS, STATUS_COLORS, STATUS_DOT, SEVERITY_EMOJI, SEVERITY_LABEL } from '@/lib/problemMeta'
 import { partitionByReview } from '@/lib/moderation'
-import { usePrivateDetail, privateDetailRef } from '@/lib/privateDetail'
+import { usePrivateDetail, privateDetailRef, deleteProblemWithPrivate } from '@/lib/privateDetail'
 
 // ── Types ────────────────────────────────────────────────
 interface Team { name: string; members: string; joinedAt?: number }
@@ -644,7 +644,10 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             onReject={rejectProblem}
             onDelete={async (id) => {
               try {
-                await deleteDoc(doc(db, 'problems', id))
+                // Not deleteDoc on the problem alone — that would orphan
+                // its private/detail and leave the submitter's contact in the
+                // database forever. See lib/privateDetail.ts.
+                await deleteProblemWithPrivate(id)
                 setDetailId(null)
               } catch (e) {
                 console.error('Failed to delete problem:', e)

@@ -9,7 +9,7 @@
 // Reads therefore only work for a signed-in Dawson account; the gallery
 // never subscribes. See the "Private detail" block in firestore.rules.
 import { useEffect, useState } from 'react'
-import { doc, onSnapshot, setDoc, arrayUnion, deleteField } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, arrayUnion, deleteField, writeBatch } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export interface Note { author: string; text: string; createdAt: number }
@@ -56,6 +56,28 @@ export function usePrivateDetail(problemId: string | null, enabled: boolean): Pr
  */
 export function appendNote(problemId: string, note: Note) {
   return setDoc(privateDetailRef(problemId), { internalNotes: arrayUnion(note) }, { merge: true })
+}
+
+/**
+ * Delete a problem together with its private detail.
+ *
+ * Firestore does NOT cascade to subcollections. Deleting `problems/{id}`
+ * on its own leaves `problems/{id}/private/detail` behind holding the
+ * submitter's contact — invisible to the app and reachable only from the
+ * console, which is the exact exposure this subcollection exists to avoid.
+ * Always delete a problem through here.
+ *
+ * Batched so it is atomic: a half-completed delete can never strand a
+ * contact without its problem. Deleting a document that does not exist is
+ * a no-op in Firestore, so problems with no contact need no special case
+ * (there is a rules test pinning that, since getting it wrong would make
+ * every contactless problem undeletable).
+ */
+export function deleteProblemWithPrivate(problemId: string) {
+  const batch = writeBatch(db)
+  batch.delete(privateDetailRef(problemId))
+  batch.delete(doc(db, 'problems', problemId))
+  return batch.commit()
 }
 
 /** Super-user contact correction; an empty string clears the field. */
