@@ -928,7 +928,7 @@ function EmailModal({ problem, type, user, team, onClose }: {
       subject: `Your Problem Bank submission: "${problem.title}"`,
       body: `Hi ${submitterFirst},
 
-My name is ${studentName} and I'm part of "${teamName}" in our design class. We saw your submission to the Design Problem Bank about "${problem.title}" and we'd love to take it on as our project!
+My name is ${studentName} and I'm part of "${teamName}" in our design class. We saw your submission to the Problem Bank about "${problem.title}" and we'd love to take it on as our project!
 
 We're really interested in learning more about this problem. Would you be available for a short conversation sometime in the next week or two? We'd love to hear more about:
 
@@ -949,7 +949,7 @@ ${contactEmail}`,
       subject: `Update on "${problem.title}" — we're making progress!`,
       body: `Hi ${submitterFirst},
 
-I wanted to give you a quick update on "${problem.title}" — the problem you submitted to our Design Problem Bank.
+I wanted to give you a quick update on "${problem.title}" — the problem you submitted to our Problem Bank.
 
 Our team (${teamName}) has been working on this and we're making good progress. Here's where we are:
 
