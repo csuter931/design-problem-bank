@@ -93,6 +93,46 @@ of truth and the next paste overwrites it.
       login`, create `.clasp.json` from the example with the script id) to get
       one-command deploys back
 
+### Deferred review findings (notifier)
+Raised by the build's own reviews, triaged as Minor, and deliberately not
+fixed before shipping. Kept here because the working list lived in a git
+worktree's scratch directory that will not survive cleanup. None affect
+current behaviour; ranked by value.
+
+- [ ] `notifier/src/main.test.ts` — the fake env's `fetchJson` ignores its
+      `url` and `init`, so swapping the `projectId` and `token` arguments at
+      the `fetchUnapprovedProblems` call would type-check (both are `string`)
+      and pass the entire suite. Assert the URL and the bearer header in the
+      harness, as `firestore.test.ts` now does. **Best value of the list.**
+- [ ] `notifier/README.md` troubleshooting — there are three corruption shapes
+      for `notifiedProblemIds` and only two have rows. Unparseable JSON behaves
+      like deletion (re-seeds, notifies nothing already pending) but logs
+      loudly; it has no entry.
+- [ ] `notifier/src/firestore.ts` — `decodeValue` returns `undefined` for
+      `geoPointValue` / `referenceValue` / `bytesValue`. Correct for the
+      current schema, but nothing marks it as a considered boundary, so a
+      future field of those types would silently vanish from a decoded doc.
+- [ ] `notifier/src/main.ts` — no guard or log when the pending queue exceeds
+      `MAX_STORED_IDS` (300). Above that the oldest ids fall out of the stored
+      set every cycle and are re-notified every five minutes indefinitely; with
+      several recipients that can exhaust the MailApp daily cap and turn into
+      silence. Needs 300 simultaneously-unreviewed submissions, so unlikely.
+- [ ] `notifier/README.md` — the `clasp pull` advice does not say to build
+      first for a diffable baseline, nor how to port a browser edit back into
+      `src/`.
+- [ ] `src/components/StudentDashboard.tsx` — the one-shot deep-link effect has
+      no automated regression test. The pure `initialTab()` helper is tested,
+      but the ref/effect interaction is not, and the repo has no
+      component-test harness. Adding one is a bigger decision than this finding.
+- [ ] `notifier/src/main.test.ts` — the `submitterContact` test pins "the email
+      builders ignore unknown fields", not the `toPending` allowlist itself; it
+      would survive replacing the allowlist with a spread. Renaming it would be
+      more honest than leaving the name overclaiming.
+
+Considered and **not** worth doing: notifier test files are excluded from
+`tsc -b`, but so is every other `*.test.ts` in this repo — fixing it here alone
+would be inconsistent.
+
 ## Before User Launch
 - [ ] **Delete the `test` problem from production** — it is approved and public, so the gallery currently reads "1 Problems". Remove it (super-user Delete in the detail modal) so the bank opens empty when students arrive. See the orphaned-`private/detail` bug below: its contact will outlive it either way until that is fixed.
 - [ ] **Seed two or three real problems before launch** — an empty gallery is a weak first impression, and a visibly fake placeholder invites students to treat the whole thing as a demo. Better written by a teacher than generated.
