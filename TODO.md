@@ -1,6 +1,6 @@
 # Problem Bank — Outstanding Tasks & Ideas
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 
 ## Phase 1 — Rules hardening + moderation: DEPLOYED 2026-09-03
 Index, client (build `50b3221`), and rules are all live. The `problems` collection was already empty, so the backfill was a no-op. Verified in production: unauthenticated list / teams / config / unfiltered query / self-approving create all return 403; the approved-only gallery query returns 200; a wizard submission succeeds and stays hidden. Remaining checks need a signed-in human:
@@ -45,24 +45,42 @@ Six commits, `3b59f92`..`74064e6`. Client via Pages; the rules in `a680d00` were
 - [ ] **Anonymous create is unlimited** — no rate limiting on submissions (same as before; the review queue now contains the blast radius).
 - [ ] Dev-only `npm audit` findings (websocket-driver via emulator tooling) — none reach the production bundle; fixing bumps postcss/browserslist, so do it as a deliberate separate change.
 
-## Phase 5 — Submission notifications: BUILT, not yet deployed
+## Phase 5 — Submission notifications: LIVE 2026-09-24
 Apps Script notifier in `notifier/`; spec at
 `docs/superpowers/specs/2026-09-22-submission-notifications-design.md`, runbook
-at `notifier/README.md`.
-- [ ] Confirm a real Firestore read succeeds with the declared `datastore`
-      scope (README step 5: run `pollForNewSubmissions` by hand, check the
-      execution log for `Execution completed`, not
-      `ACCESS_TOKEN_SCOPE_INSUFFICIENT`) — before anything else below
-- [ ] Work through `notifier/README.md` "First-time setup" (creates the script,
-      attaches the GCP project, grants scopes, creates the two triggers)
-- [ ] Confirm Dawson's Workspace admin does not block Apps Script or require
-      OAuth app allowlisting — this is the one accepted risk that could veto the
-      approach. If it does, Appendix A of the spec is the Cloudflare fallback
-- [ ] End-to-end: submit through the live wizard, confirm the email arrives
-      within five minutes and its link opens the Pending tab
-- [ ] Confirm a non-super-user following the forwarded `?tab=pending` link lands on Available
-- [ ] Confirm the first Monday heartbeat arrives
-- [ ] Add a second teacher to `config/superusers` and confirm they are emailed too
+at `notifier/README.md`. Script owned by `csupiro@dawsonschool.org`, attached to
+GCP project `376204026497` (= `dawson-problem-bank-24a9c`), both triggers live.
+- [x] Firestore read succeeds with the declared `datastore` scope — verified
+      2026-09-24, `Execution completed`, no `ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
+      This was the one genuinely unknown risk: the spec originally declared
+      `cloud-platform.read-only`, which Firestore does not accept at all
+- [x] Workspace admin does not block Apps Script — no allowlisting hit; the
+      Cloudflare fallback in the spec's Appendix A is not needed
+- [x] End-to-end verified twice: submitted through the live wizard, the
+      5-minute trigger fired unattended, the email arrived, and its button
+      opened the Pending tab directly
+- [x] First run seeded silently as designed (`notifiedProblemIds` → `[]`,
+      no email), then picked up the next submission
+- [ ] Confirm the first Monday heartbeat arrives (first one due 2026-09-28,
+      07:00 MT). No email that morning = the notifier has stopped; that is the
+      only backstop
+- [ ] Confirm a non-super-user following a forwarded `?tab=pending` link lands
+      on Available. Needs a Dawson account *not* in `config/superusers`
+- [ ] Add a second teacher to `config/superusers` and confirm they are emailed
+      too — the recipient-list path has only ever run with one address
+- [ ] Delete the `Notifier Test` / `Trigger check` problems — they were
+      approved during testing and are live in the public gallery
+
+### Deployed by paste, not clasp
+Setup skipped the clasp route to reach the scope question faster, so there is
+**no `notifier/.clasp.json`** and `npm run notifier:push` will not work yet.
+Until that is set up, shipping a notifier change means: `npm run
+notifier:build`, then paste `notifier/build/Code.js` over `Code.gs` in the
+editor and save. Never edit in the Apps Script editor — the repo is the source
+of truth and the next paste overwrites it.
+- [ ] Optional: do README steps 1–6 (enable the Apps Script API, `npx clasp
+      login`, create `.clasp.json` from the example with the script id) to get
+      one-command deploys back
 
 ## Before User Launch
 - [ ] **Delete the `test` problem from production** — it is approved and public, so the gallery currently reads "1 Problems". Remove it (super-user Delete in the detail modal) so the bank opens empty when students arrive. See the orphaned-`private/detail` bug below: its contact will outlive it either way until that is fixed.
