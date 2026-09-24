@@ -32,6 +32,12 @@ export function poll(env: NotifierEnv): void {
   const arrivals = pending.filter(p => fresh.has(p.id))
   env.sendEmail(recipients, buildDigest(arrivals, pending.length, env.dashboardUrl))
 
+  // Logged on the happy path, not just the failure paths. Without this the
+  // execution history cannot distinguish "sent successfully" from a branch
+  // that returned early, which cost a diagnostic round-trip the first time
+  // mail went missing — the addresses are the whole question when it does.
+  env.log(`Emailed ${arrivals.length} new problem(s) to ${recipients.length} recipient(s): ${recipients.join(', ')}`)
+
   // Last, and only on success. A throw above leaves state untouched so the
   // next cycle retries: at-least-once, because a duplicate email is an
   // annoyance and a missed one defeats the feature.
@@ -48,6 +54,7 @@ export function heartbeat(env: NotifierEnv): void {
     return
   }
   env.sendEmail(recipients, buildHeartbeat(pending.length, env.dashboardUrl))
+  env.log(`Heartbeat: ${pending.length} pending, sent to ${recipients.length} recipient(s): ${recipients.join(', ')}`)
 }
 
 /** Pending problems, oldest first, as the email builders want them. */
