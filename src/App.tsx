@@ -344,7 +344,7 @@ function App() {
               <DawsonLogo imgClass="h-14 sm:h-16" />
               <div className="h-9 sm:h-11 w-px bg-white/25" aria-hidden="true" />
               <h1 className="font-bold text-lg sm:text-2xl tracking-tight text-white leading-none font-display whitespace-nowrap">
-                Design Problem Bank
+                Problem Bank
               </h1>
             </div>
             <div className="flex items-center gap-5 text-sm text-white/65">

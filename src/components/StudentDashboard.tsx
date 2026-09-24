@@ -394,7 +394,7 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
             <div className="h-9 sm:h-10 w-px bg-white/25" aria-hidden="true" />
             <div className="whitespace-nowrap">
               <h1 className="font-bold text-[15px] sm:text-xl tracking-tight text-white leading-none font-display">
-                Design Problem Bank
+                Problem Bank
               </h1>
               <p className="text-[11px] sm:text-xs text-white/60 mt-1">Student Dashboard</p>
             </div>
@@ -440,7 +440,10 @@ export function StudentDashboard({ onBack }: { onBack: () => void }) {
               title="Back to the public problem bank"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white/80 text-xs font-medium whitespace-nowrap hover:text-white hover:bg-white/[0.10] transition-colors"
             >
-              Problem Bank
+              {/* Not "Problem Bank" — that is now this page's own title in the
+                  header to the left, so the button would read as a link to
+                  where you already are. */}
+              Browse Problems
             </button>
           </div>
         </div>
