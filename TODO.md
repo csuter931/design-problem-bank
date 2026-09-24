@@ -64,12 +64,23 @@ GCP project `376204026497` (= `dawson-problem-bank-24a9c`), both triggers live.
 - [ ] Confirm the first Monday heartbeat arrives (first one due 2026-09-28,
       07:00 MT). No email that morning = the notifier has stopped; that is the
       only backstop
-- [ ] Confirm a non-super-user following a forwarded `?tab=pending` link lands
-      on Available. Needs a Dawson account *not* in `config/superusers`
-- [ ] Add a second teacher to `config/superusers` and confirm they are emailed
-      too — the recipient-list path has only ever run with one address
-- [ ] Delete the `Notifier Test` / `Trigger check` problems — they were
-      approved during testing and are live in the public gallery
+- [x] Test problems (`Notifier Test`, `Trigger check`) deleted from the gallery
+
+#### Closed as won't-do (decided 2026-09-24) — do not re-raise without new reason
+- **Non-super-user following `?tab=pending`** — not verified live, deliberately.
+  The URL only ever appears in notification emails, which only super users
+  receive, and `initialTab('?tab=pending', false) === 'available'` is unit
+  tested in `src/lib/dashboardTabs.test.ts`. Only the live wiring is unverified,
+  and that is verified for the super-user path that actually runs.
+- **Second teacher in `config/superusers`** — not planned. Consequence to accept:
+  the multi-recipient path (`recipients.join(',')` in `notifier/src/env.ts`) has
+  never run in production with more than one address, and the notifier is bound
+  to one person's Google account, so if that account is suspended notifications
+  stop for everyone. The missing Monday heartbeat is the only signal.
+- **Gmail filter to force these to Primary** — declined. Note for whoever hits
+  this later: of the first two notification emails, one landed in the inbox and
+  one in "Everything else", so Gmail's categoriser is not consistent here. If a
+  submission ever goes unnoticed, this is the first thing to revisit.
 
 ### Deployed by paste, not clasp
 Setup skipped the clasp route to reach the scope question faster, so there is
